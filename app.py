@@ -146,9 +146,14 @@ def tela_usuario():
             
             if st.form_submit_button("📅 Fazer Agendamento"):
                 st.success("Agendamento realizado com sucesso! (Simulação)")
+                
+# Tela de Relatorios
+def tela_relatorios():
+    st.title("👤 Relatorios de uso da Lavanderia")
+    st.markdown("---")
 
 
-
+             
 if 'pagina' not in st.session_state:
     st.session_state.pagina = "inicial"
 
