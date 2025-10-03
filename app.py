@@ -149,8 +149,9 @@ def tela_usuario():
                 
 # Tela de Relatorios
 def tela_relatorios():
-    st.title("👤 Relatorios de uso da Lavanderia)
+    st.title("👤 Relatorios de uso da Lavanderia")
     st.markdown("---")
+
 
              
 if 'pagina' not in st.session_state:
