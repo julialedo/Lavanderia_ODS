@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+from controladores.controlador_reserva import ControladorReserva
+
+controlador_reserva = ControladorReserva()
 
 st.set_page_config(
     page_title="Gerenciador de Lavanderia Compartilhada",
@@ -85,75 +88,118 @@ def tela_usuario():
     st.title("👤 Área do Morador")
     st.markdown("---")
     
-    tab1, tab2 = st.tabs(["📅 Visualizar Horários", "⏰ Fazer Agendamento"])
+    tab1, tab2, tab3 = st.tabs(["📅 Visualizar Horários", "⏰ Fazer Agendamento", "📋 Minhas Reservas"])
     
     with tab1:
         st.subheader("Horários Disponíveis")
         
-        # Seleção de data
-        data_selecionada = st.date_input("Selecione a data")
-        
-        # Máquinas de exemplo
-        st.subheader("Máquina 1 - Lavadora (Térreo)")
-        
-        # Horários de exemplo
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2 = st.columns(2)
         
         with col1:
-            st.write("**08:00**")
-            st.success("✅ Disponível")
-            
-            st.write("**12:00**")
-            st.error("❌ Ocupado")
-            
-            st.write("**16:00**")
-            st.success("✅ Disponível")
+            # Máquinas de exemplo (depois vem do banco)
+            maquinas = ["Máquina 1 - Lavadora", "Máquina 2 - Secadora", "Máquina 3 - Lavadora"]
+            maquina_selecionada = st.selectbox("Selecione a máquina:", maquinas)
         
         with col2:
-            st.write("**09:00**")
-            st.error("❌ Ocupado")
-            
-            st.write("**13:00**")
-            st.success("✅ Disponível")
-            
-            st.write("**17:00**")
-            st.error("❌ Ocupado")
+            data_selecionada = st.date_input("Selecione a data")
         
-        with col3:
-            st.write("**10:00**")
-            st.success("✅ Disponível")
+        if st.button("🔍 Ver Horários Disponíveis"):
+            # Converter para ID da máquina (mock)
+            maquina_id = "M001" if "1" in maquina_selecionada else "M002"
             
-            st.write("**14:00**")
-            st.success("✅ Disponível")
-            
-            st.write("**18:00**")
-            st.success("✅ Disponível")
-        
-        with col4:
-            st.write("**11:00**")
-            st.error("❌ Ocupado")
-            
-            st.write("**15:00**")
-            st.success("✅ Disponível")
-            
-            st.write("**19:00**")
-            st.success("✅ Disponível")
-    
-    with tab2:
-        st.subheader("Agendar Máquina")
-        
-        with st.form("agendamento_form"):
-            maquina = st.selectbox(
-                "Selecione a máquina",
-                ["Máquina 1 - Lavadora (Térreo)", "Máquina 2 - Secadora (Térreo)", "Máquina 3 - Lavadora (1º Andar)"]
+            # Usar SEU controlador para buscar horários reais
+            horarios_disponiveis = controlador_reserva.visualizar_horarios_disponiveis(
+                maquina_id, 
+                data_selecionada.strftime("%Y-%m-%d")
             )
             
-            data_agendamento = st.date_input("Data do agendamento")
-            hora_agendamento = st.time_input("Hora de início")
-            usuario = st.text_input("Seu nome*", placeholder="Digite seu nome")
+            st.subheader(f"Horários disponíveis - {maquina_selecionada}")
+            
+            # Mostrar horários em colunas
+            if horarios_disponiveis:
+                cols = st.columns(4)
+                for i, horario in enumerate(horarios_disponiveis):
+                    with cols[i % 4]:
+                        st.write(f"**{horario}**")
+                        st.success("✅ Disponível")
+            else:
+                st.info("📭 Não há horários disponíveis para esta data/máquina.")
+    
+    with tab2:
+        st.subheader("Fazer Agendamento")
+        
+        with st.form("agendamento_form"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                maquina = st.selectbox(
+                    "Selecione a máquina",
+                    ["Máquina 1 - Lavadora (Térreo)", "Máquina 2 - Secadora (Térreo)", "Máquina 3 - Lavadora (1º Andar)"],
+                    key="agendamento_maquina"
+                )
+                
+                data_agendamento = st.date_input("Data do agendamento", key="agendamento_data")
+            
+            with col2:
+                # Horários disponíveis para seleção
+                horarios = [f"{hora:02d}:00" for hora in range(8, 20)]
+                hora_agendamento = st.selectbox("Horário de início", horarios)
+                
+                usuario = st.text_input("Seu nome*", placeholder="Digite seu nome")
             
             if st.form_submit_button("📅 Fazer Agendamento"):
-                st.success("Agendamento realizado com sucesso! (Simulação)")
+                if usuario:
+                    # Converter para IDs (mock)
+                    maquina_id = "M001" if "1" in maquina else "M002"
+                    usuario_id = usuario.lower().replace(" ", "")
+                    
+                    # Usar SEU controlador para fazer reserva real
+                    reserva = controlador_reserva.criar_reserva(
+                        maquina_id,
+                        usuario_id,
+                        data_agendamento.strftime("%Y-%m-%d"),
+                        hora_agendamento
+                    )
+                    
+                    if reserva:
+                        st.success(f"🎉 Reserva realizada com sucesso! ID: {reserva.id_reserva}")
+                    else:
+                        st.error("❌ Erro ao fazer reserva. Tente novamente.")
+                else:
+                    st.warning("⚠️ Por favor, digite seu nome.")
+    
+    with tab3:
+        st.subheader("Minhas Reservas")
+        
+        usuario_consulta = st.text_input("Digite seu nome para ver suas reservas:", 
+                                       placeholder="Seu nome", 
+                                       key="minhas_reservas")
+        
+        if usuario_consulta:
+            usuario_id = usuario_consulta.lower().replace(" ", "")
+            reservas = controlador_reserva.obter_reservas_por_usuario(usuario_id)
+            
+            if reservas:
+                st.success(f"📋 Você tem {len(reservas)} reserva(s) ativa(s)")
+                
+                for reserva in reservas:
+                    with st.expander(f"Reserva {reserva.id_reserva} - {reserva.data} às {reserva.hora_inicio}"):
+                        col1, col2 = st.columns([3, 1])
+                        
+                        with col1:
+                            st.write(f"**Máquina ID:** {reserva.maquina_id}")
+                            st.write(f"**Data:** {reserva.data}")
+                            st.write(f"**Horário:** {reserva.hora_inicio} - {reserva.hora_fim}")
+                            st.write(f"**Status:** {reserva.status}")
+                        
+                        with col2:
+                            if st.button("❌ Cancelar", key=f"cancel_{reserva.id_reserva}"):
+                                if controlador_reserva.cancelar_reserva(reserva.id_reserva, usuario_id):
+                                    st.success("Reserva cancelada com sucesso!")
+                                    st.rerun()
+            else:
+                st.info("📭 Você não possui reservas ativas.")
+
                 
 # Tela de Relatorios
 def tela_relatorios():
