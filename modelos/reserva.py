@@ -8,7 +8,7 @@ class Reserva:
         self.usuario_id = usuario_id
         self.data = data  
         self.hora_inicio = hora_inicio  
-        self.hora_fim = hora_fim
+        self.hora_fim = self._calcular_hora_fim(hora_inicio)
         self.status = status  # pode estar ativa, cancelada ou concluída
         self.data_criacao = datetime.now().isoformat()
     
