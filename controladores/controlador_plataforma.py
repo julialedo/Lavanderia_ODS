@@ -1,7 +1,7 @@
 from modelos.plataforma import Plataforma
 from modelos.usuario import Usuario
 
-class ContradorPlataforma:
+class ControladorPlataforma:
     def __init__(self):
         self.plataformas = []
         self._criar_dados_iniciais()
