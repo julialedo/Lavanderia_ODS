@@ -8,4 +8,5 @@ class Usuario:
         self.senha = senha
         self.tipo_perfil = tipo_perfil  # "morador", "admin_lavanderia", "admin_plataforma"
         self.status_conta = status_conta
+        self.id_lavanderia = id_lavanderia
         self.data_criacao = datetime.now()
