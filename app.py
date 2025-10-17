@@ -30,33 +30,69 @@ def tela_login():
     st.title("🔐 Login - Sistema de Lavanderia")
     st.markdown("---")
 
-    usuario = st.text_input("Usuário")
+    st.info("Para testar o aplicativo sem o MySQL, use:\n- Admin de Prédio: Email: `admin@predio.com`, Senha: `123`\n- Morador: Email: `morador@predio.com`, Senha: `123`\n- Admin de Plataforma: Email: `plataforma@admin.com`, Senha: `123`")
+
+    usuario = st.text_input("E-mail")
     senha = st.text_input("Senha", type="password")
 
     if st.button("Entrar", use_container_width=True):
+        
+        # Simulação de Login (Mock)
+        if usuario in ["admin@predio.com", "morador@predio.com", "plataforma@admin.com"] and senha == "123":
+            if usuario == "admin@predio.com":
+                st.session_state["logado"] = True
+                st.session_state["usuario"] = "Admin Predial"
+                st.session_state["tipo"] = "adm_predio"
+                st.session_state["id_lavanderia"] = 1 # Mock ID
+                st.session_state.pagina = "inicial"
+            elif usuario == "morador@predio.com":
+                st.session_state["logado"] = True
+                st.session_state["usuario"] = "Morador Apto 101"
+                st.session_state["tipo"] = "morador"
+                st.session_state["id_lavanderia"] = 1 # Mock ID
+                st.session_state.pagina = "usuario"
+            elif usuario == "plataforma@admin.com":
+                st.session_state["logado"] = True
+                st.session_state["usuario"] = "Admin Plataforma"
+                st.session_state["tipo"] = "adm_plataforma"
+                st.session_state["id_lavanderia"] = None
+                st.session_state.pagina = "adm_plataforma"
+                
+            st.success(f"Bem-vindo, {st.session_state['usuario']}! (Modo Simulação)")
+            st.rerun()
+            return
+            
+        # Lógica original de Login (com Conexão ao Banco)
         conexao = conectar()
         if conexao:
-            cursor = conexao.cursor(dictionary=True)
-            query = "SELECT * FROM usuario WHERE email=%s AND senha=%s"
-            cursor.execute(query, (usuario, senha))
-            resultado = cursor.fetchone()
+            try:
+                cursor = conexao.cursor(dictionary=True)
+                query = "SELECT * FROM usuario WHERE email=%s AND senha=%s"
+                cursor.execute(query, (usuario, senha))
+                resultado = cursor.fetchone()
 
-            if resultado:
-                st.session_state["logado"] = True
-                st.session_state["usuario"] = resultado["nome"]
-                st.session_state["tipo"] = resultado["tipo_usuario"]
-                st.session_state["id_lavanderia"] = resultado.get("id_lavanderia")
+                if resultado:
+                    st.session_state["logado"] = True
+                    st.session_state["usuario"] = resultado["nome"]
+                    st.session_state["tipo"] = resultado["tipo_usuario"]
+                    st.session_state["id_lavanderia"] = resultado.get("id_lavanderia")
 
-                st.success(f"Bem-vindo, {resultado['nome']}!")
-                if resultado["tipo_usuario"] == "adm_plataforma":
-                    st.session_state.pagina = "adm_plataforma"
-                    st.rerun()
+                    st.success(f"Bem-vindo, {resultado['nome']}!")
+                    if resultado["tipo_usuario"] == "adm_plataforma":
+                        st.session_state.pagina = "adm_plataforma"
+                        st.rerun()
+                    else:
+                        st.session_state.pagina = "inicial"
+                        st.rerun()
                 else:
-                    st.session_state.pagina = "inicial"
-                    st.rerun()
-            else:
-                st.error("Usuário ou senha incorretos.")
-            conexao.close()
+                    st.error("Usuário ou senha incorretos.")
+            except Exception as e:
+                st.error(f"Erro ao tentar logar com o banco de dados: {e}")
+            finally:
+                conexao.close()
+        else:
+             st.warning("Falha na conexão com o banco. Tentando login de simulação...")
+
 
 
 # 🏠 TELA INICIAL
