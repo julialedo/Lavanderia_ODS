@@ -1,11 +1,12 @@
-""" -- Model maquina.py
+""" 
+Model - maquina.py
 Responsável pela persistência (consultas SQL), mapeamento simples entre linha do banco ↔ objeto Python. 
-Todas as operações CRUD com o MySQL. Onde cuidamos da integridade dos dados e do uso do conector (conexao_bd.conectar()). """
+Todas as operações CRUD com o MySQL. Onde cuidamos da integridade dos dados e do uso do conector (conexao_bd.conectar()). 
+"""
 
 from dataclasses import dataclass   #cria um "molde" para a classe (COM init, repr)
 from typing import Optional, List
 from banco_de_dados.conexao_bd import conectar
-import mysql.connector
 
 @dataclass
 class Maquina:

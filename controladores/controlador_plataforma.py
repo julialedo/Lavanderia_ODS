@@ -1,39 +1,25 @@
-from modelos.plataforma import Plataforma
-from modelos.usuario import Usuario
+
+from modelos.lavanderia import Lavanderia, criar_lavanderia, listar_lavanderias, contar_lavanderias
+from modelos.usuario import criar_administrador_predio, contar_usuarios
 
 class ControladorPlataforma:
-    def __init__(self):
-        self.plataformas = []
-        self._criar_dados_iniciais()
-    
-    def _criar_dados_iniciais(self):
-        #Dados para teste
-        plataforma_principal = Plataforma("PLAT001", "Lavanderia Central", "Rua Principal, 123")
-        self.plataformas.append(plataforma_principal)
-    
 
-    def cadastrar_lavanderia(self, nome: str, endereco: str = "") -> Plataforma:
-        novo_id = f"PLAT{len(self.plataformas) + 1:03d}"
-        nova_plataforma = Plataforma(novo_id, nome, endereco)
-        self.plataformas.append(nova_plataforma)
-        return nova_plataforma
-    
-    def obter_estatisticas(self, usuarios: list) -> dict:
-        total_usuarios = len(usuarios)
-        total_admins = len([u for u in usuarios if u.tipo_perfil in ["admin_plataforma", "admin_lavanderia"]])
-        
+    def cadastrar_lavanderia(self, nome: str, endereco: str, id_adm_predio: int = None):
+        if not nome:
+            raise ValueError("O nome da lavanderia é obrigatório.")
+        lav = Lavanderia(None, id_adm_predio, nome, endereco, None, 0)
+        return criar_lavanderia(lav)
+
+    def cadastrar_admin_predio(self, nome: str, email: str, senha: str, telefone: str, id_lavanderia: int):
+        if not all([nome, email, senha, telefone, id_lavanderia]):
+            raise ValueError("Todos os campos são obrigatórios.")
+        return criar_administrador_predio(nome, email, senha, telefone, id_lavanderia)
+
+    def listar_lavanderias(self):
+        return listar_lavanderias()
+
+    def obter_estatisticas(self):
         return {
-            "total_lavanderias": len(self.plataformas),
-            "total_usuarios": total_usuarios,
-            "total_administradores": total_admins,
-            "lavanderia_principal": self.plataformas[0].nome_plataforma if self.plataformas else "Nenhuma"
+            "usuarios": contar_usuarios(),
+            "lavanderias": contar_lavanderias()
         }
-    
-    def listar_lavanderias(self) -> list:
-        return self.plataformas
-    
-    def obter_plataforma_por_id(self, id_plataforma: str) -> Plataforma:
-        for plataforma in self.plataformas:
-            if plataforma.id_plataforma == id_plataforma:
-                return plataforma
-        return None
