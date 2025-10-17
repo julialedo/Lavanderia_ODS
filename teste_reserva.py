@@ -1,28 +1,38 @@
+# test_reservas.py
+import sys
+from datetime import date
+from datetime import datetime, timedelta
+
+# Adiciona o diretório raiz ao path para encontrar os módulos
+# (Pode não ser necessário dependendo de como você executa, mas é uma boa prática)
+# sys.path.append('.') 
+
+# Importa o controlador que queremos testar
 from controladores.controlador_reserva import ControladorReserva
+# Importa uma função do modelo para verificação direta no banco
+from modelos.reserva import obter_reserva_por_id
 
-# Teste do controlador
-controlador = ControladorReserva()
-
-print("=== TESTE SISTEMA DE RESERVAS ===")
-
-# 1. Visualizar horários disponíveis (deve mostrar todos)
-print("\n1. Horários disponíveis (inicial):")
-horarios = controlador.visualizar_horarios_disponiveis("M001", "2024-01-15")
-print(f"M001 dia 15/01: {horarios}")
-
-# 2. Fazer primeira reserva
-print("\n2. Fazendo reserva às 10:00...")
-reserva1 = controlador.criar_reserva("M001", "ana123", "2024-01-15", "10:00")
-print(f"Reserva criada: {reserva1.id_reserva if reserva1 else 'FALHOU'}")
-
-# 3. Tentar reservar mesmo horário (deve falhar)
-print("\n3. Tentando reservar mesmo horário...")
-reserva2 = controlador.criar_reserva("M001", "joao456", "2024-01-15", "10:00")
-print(f"Segunda reserva: {reserva2.id_reserva if reserva2 else 'BLOQUEADA (correto!)'}")
-
-# 4. Ver horários disponíveis novamente (10:00 sumiu)
-print("\n4. Horários disponíveis após reserva:")
-horarios = controlador.visualizar_horarios_disponiveis("M001", "2024-01-15")
-print(f"M001 dia 15/01: {horarios}")
-
-print("\n✅ TESTE CONCLUÍDO!")
+def executar_testes():
+    controlador = ControladorReserva()
+    
+    # DEBUG: Verificar todas as reservas para a máquina 2 na data 2025-10-16
+    from modelos.reserva import obter_reservas_por_maquina_e_data
+    reservas_existentes = obter_reservas_por_maquina_e_data("2", "2025-10-16")
+    print("=== DEBUG: RESERVAS EXISTENTES ===")
+    for reserva in reservas_existentes:
+        print(f"ID: {reserva.id_reserva}, Máquina: {reserva.id_maquina}, Data: {reserva.data_reserva}, Hora: {reserva.hora_inicio}, Status: {reserva.status_reserva}")
+    
+    # TESTE 2: Verificar horários disponíveis
+    MAQUINA_ID = "2"
+    DATA_TESTE = "2025-10-16"
+    HORA_INICIAL = "11:00"
+    
+    horarios_disponiveis = controlador.visualizar_horarios_disponiveis(MAQUINA_ID, DATA_TESTE)
+    print(f"Horários disponíveis para máquina {MAQUINA_ID} em {DATA_TESTE}: {horarios_disponiveis}")
+    
+    # CORREÇÃO: O horário 10:00 DEVE estar disponível pois não há reservas para máquina 2
+    assert HORA_INICIAL in horarios_disponiveis, f"FALHA: O horário {HORA_INICIAL} não está listado como disponível quando deveria estar."
+    
+    print("✓ TESTE 2: Horários disponíveis verificados com sucesso!")
+if __name__ == "__main__":
+    executar_testes()
