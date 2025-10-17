@@ -9,15 +9,15 @@ from controladores.controlador_reserva import ControladorReserva
 from controladores.controlador_maquina import ControladorMaquina
 from controladores.controlador_plataforma import ControladorPlataforma
 
-#depois tirar, pois a view não acessa o banco
+#DEPOIS TIRAR, PORQUE A VIEW NÃO ACESSA O BANCO DE DADOS
 from banco_de_dados.conexao_bd import conectar
 
-# --- Inicialização dos controladores ---
+# Inicialização dos controladores:
 controlador_reserva = ControladorReserva()
 controlador_maquina = ControladorMaquina()
 controlador_plataforma = ControladorPlataforma()
 
-# --- Configurações gerais ---
+# Configurações Gerais:
 st.set_page_config(
     page_title="Gerenciador de Lavanderia Compartilhada",
     page_icon="🧺",
@@ -25,7 +25,7 @@ st.set_page_config(
 )
 
 
-# 🔑 TELA DE LOGIN
+# Tela de Login:
 def tela_login():
     st.title("🔐 Login - Sistema de Lavanderia")
     st.markdown("---")
@@ -59,7 +59,7 @@ def tela_login():
             conexao.close()
 
 
-# 🏠 TELA INICIAL
+# Tela Inicial:
 def tela_inicial():
     st.title("🧺 Gerenciador de Lavanderia Compartilhada")
     st.markdown("---")
@@ -87,13 +87,13 @@ def tela_inicial():
         st.experimental_rerun()
 
 
-# ⚙️ TELA DO ADMINISTRADOR
+# Tela do Administrador:
 def tela_admin():
     st.title("👨‍💼 Gerenciamento de Máquinas")
     st.markdown("---")
     
 
-    # -- Cadastrar Máquinas - Formulário
+    # Cadastrar Máquinas - Formulário
     with st.expander("➕ Cadastrar Nova Máquina"):
         with st.form("nova_maquina"):
             codigo = st.text_input("Código da Máquina (ex: LAV-01, SEC-07)")
@@ -111,7 +111,7 @@ def tela_admin():
     st.markdown("---")
 
 
-    # -- Listar as Maquinas Cadastradas
+    # Listar as Maquinas Cadastradas
     st.subheader("📋 Máquinas cadastradas")
 
     maquinas = controlador_maquina.listar_por_lavanderia(st.session_state["id_lavanderia"])
@@ -142,7 +142,7 @@ def tela_admin():
                             st.error(str(e))
     
 
-    # -- Caso tenha clicado em Editar, mostra o formulário:
+    # Caso tenha clicado em Editar, mostra o formulário:
     if "editar_maquina" in st.session_state:
         maq_id = st.session_state["editar_maquina"]
         maquina = controlador_maquina.obter(maq_id)
@@ -182,7 +182,7 @@ def tela_admin():
 
 
 
-# 👤 TELA DO USUÁRIO
+# Tela do Usuário
 def tela_usuario():
     st.title("👤 Área do Morador")
     st.markdown("---")
@@ -299,7 +299,8 @@ def tela_usuario():
             else:
                 st.info("📭 Você não possui reservas ativas.")
 
-# 📊 TELA DE RELATÓRIOS
+
+# Tela de Relatórios:
 def tela_relatorios():
     st.title("📊 Relatórios de Uso da Lavanderia")
     st.markdown("---")
@@ -308,11 +309,12 @@ def tela_relatorios():
         st.session_state.pagina = "inicial"
 
 
-# -- Tela de Administrador de Plataforma
+# Tela de Administrador de Plataforma:
 def tela_adm_plataforma():
     tab1, tab2, tab3 = st.tabs(["Cadastrar Lavanderia", "Cadastrar Administrador", "Estatísticas"])
 
-    with tab1: # criar lavanderia
+    # Cadatrar Lavanderia:
+    with tab1:
         with st.form("nova_lavanderia"):
             nome = st.text_input("Nome")
             endereco = st.text_input("Endereço")
@@ -320,7 +322,8 @@ def tela_adm_plataforma():
             if st.form_submit_button("Cadastrar"):
                 controlador_plataforma.cadastrar_lavanderia(nome, endereco, id_adm_predio or None)
 
-    with tab2: # criar admin_predio
+    # Cadastrar Administrador de Prédio:
+    with tab2: 
         lavanderias = controlador_plataforma.listar_lavanderias()
         lav_opts = {lav.nome: lav.id_lavanderia for lav in lavanderias}
         with st.form("novo_admin_predio"):
@@ -332,13 +335,14 @@ def tela_adm_plataforma():
             if st.form_submit_button("Cadastrar"):
                 controlador_plataforma.cadastrar_admin_predio(nome,email,senha,telefone, lav_opts[lav_sel])
 
+    # Estatísticas da Plataforma (ex: quantidade de mlavanderias, usuarios)
     with tab3:
         stats = controlador_plataforma.obter_estatisticas()
         st.metric("Usuários Totais", stats["usuarios"])
         st.metric("Lavanderias Totais", stats["lavanderias"])
 
 
-# 🚀 EXECUÇÃO PRINCIPAL
+# Execução Principal:
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
 if "pagina" not in st.session_state:

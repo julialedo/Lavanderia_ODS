@@ -1,3 +1,7 @@
+# Controller - controlador_reserva.py  
+# Responsável pelas validações, por transformar dados para o model, decisões.
+# Não faz acesso direto ao banco, chama funções do Model. Retorna resultados para a View.
+
 from datetime import datetime
 from modelos.reserva import (
     Reserva, 

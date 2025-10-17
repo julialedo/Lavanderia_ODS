@@ -1,3 +1,7 @@
+# Model - reserva.py
+# Responsável pela persistência (consultas SQL), mapeamento simples entre linha do banco ↔ objeto Python. 
+# Todas as operações CRUD com o MySQL. Onde cuidamos da integridade dos dados e do uso do conector (conexao_bd.conectar()). 
+
 from dataclasses import dataclass
 from typing import Optional, List
 from datetime import datetime

@@ -1,10 +1,12 @@
 import mysql.connector
 from mysql.connector import Error
 
+
+# Definindo a conexão com o Banco de Dados
 def conectar():
     try:
-        conexao = mysql.connector.connect(
-            host='maglev.proxy.rlwy.net',
+        conexao = mysql.connector.connect(  #estabelecendo a conexão, passando os dados do banco de dados online
+            host='maglev.proxy.rlwy.net', 
             port='26076',
             user='root',
             password='tolRZxoWcJVgPkBDtOHkzrSqfkQkKSja',
