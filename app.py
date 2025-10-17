@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from controladores.controlador_reserva import ControladorReserva
 from controladores.controlador_maquina import ControladorMaquina
+from controladores.controlador_plataforma import ControladorPlataforma
 
 #depois tirar, pois a view não acessa o banco
 from banco_de_dados.conexao_bd import conectar
@@ -46,8 +47,12 @@ def tela_login():
                 st.session_state["id_lavanderia"] = resultado.get("id_lavanderia")
 
                 st.success(f"Bem-vindo, {resultado['nome']}!")
-                st.session_state.pagina = "inicial"
-                st.rerun()
+                if resultado["tipo_usuario"] == "adm_plataforma":
+                    st.session_state.pagina = "adm_plataforma"
+                    st.rerun()
+                else:
+                    st.session_state.pagina = "inicial"
+                    st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
             conexao.close()
@@ -302,6 +307,36 @@ def tela_relatorios():
         st.session_state.pagina = "inicial"
 
 
+# -- Tela de Administrador de Plataforma
+def tela_adm_plataforma():
+    tab1, tab2, tab3 = st.tabs(["Cadastrar Lavanderia", "Cadastrar Administrador", "Estatísticas"])
+
+    with tab1: # criar lavanderia
+        with st.form("nova_lavanderia"):
+            nome = st.text_input("Nome")
+            endereco = st.text_input("Endereço")
+            id_adm_predio = st.number_input("ID do Administrador (opcional)")
+            if st.form_submit_button("Cadastrar"):
+                controlador_plataforma.cadastrar_lavanderia(nome, endereco, id_adm_predio or None)
+
+    with tab2: # criar admin_predio
+        lavanderias = controlador_plataforma.listar_lavanderias()
+        lav_opts = {lav.nome: lav.id_lavanderia for lav in lavanderias}
+        with st.form("novo_admin_predio"):
+            nome = st.text_input("Nome")
+            email = st.text_input("E-mail")
+            senha = st.text_input("Senha", type="password")
+            telefone = st.text_input("Telefone")
+            lav_sel = st.selectbox("Lavanderia", list(lav_opts.keys()))
+            if st.form_submit_button("Cadastrar"):
+                controlador_plataforma.cadastrar_admin_predio(nome,email,senha,telefone, lav_opts[lav_sel])
+
+    with tab3:
+        stats = controlador_plataforma.obter_estatisticas()
+        st.metric("Usuários Totais", stats["usuarios"])
+        st.metric("Lavanderias Totais", stats["lavanderias"])
+
+
 # 🚀 EXECUÇÃO PRINCIPAL
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
@@ -319,3 +354,5 @@ else:
         tela_usuario()
     elif st.session_state.pagina == "relatorios":
         tela_relatorios()
+    elif st.session_state.pagina == "adm_plataforma":
+        tela_adm_plataforma()
