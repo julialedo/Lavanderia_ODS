@@ -1,71 +1,81 @@
-from modelos.reserva import Reserva
+from datetime import datetime
+from modelos.reserva import (
+    Reserva, 
+    criar_reserva, 
+    obter_reservas_por_maquina_e_data, 
+    obter_reservas_por_usuario as obter_reservas_por_usuario_db, 
+    obter_reserva_por_id,
+    atualizar_status_reserva,
+    atualizar_data_hora_reserva,
+    contar_total_reservas
+)
 
 class ControladorReserva:
     def __init__(self):
-        self.reservas = []  # Lista temporária - DEPOIS MUDAR NA CONEXÃO DO BD
+        pass
     
-    def obter_proximo_id(self) -> str:
-        return f"R{len(self.reservas) + 1:04d}"
+    def _calcular_hora_fim(self, hora_inicio: str) -> str:
+        hora = int(hora_inicio.split(':')[0])
+        hora_fim = (hora + 1) % 24
+        return f"{hora_fim:02d}:00"
+
+    def obter_proximo_id(self) -> int:
+        total = contar_total_reservas()
+        return total + 1
     
     def criar_reserva(self, maquina_id: str, usuario_id: str, data: str, hora_inicio: str):
-        from modelos.reserva import Reserva
-        
-        # Verificar se horário está disponível
         if not self._horario_disponivel(maquina_id, data, hora_inicio):
             return None
+        
         id_reserva = self.obter_proximo_id()
-        nova_reserva = Reserva(id_reserva, maquina_id, usuario_id, data, hora_inicio)
-        # Salvar (por enquanto na lista)
-        self.reservas.append(nova_reserva)
-        return nova_reserva
+        hora_fim = self._calcular_hora_fim(hora_inicio)
+        
+        nova_reserva = Reserva(
+            id_reserva=id_reserva, 
+            id_maquina=maquina_id, 
+            id_usuario=usuario_id, 
+            data_reserva=data, 
+            hora_inicio=hora_inicio,
+            hora_fim=hora_fim,
+            status_reserva="ativa"
+        )
+
+        return criar_reserva(nova_reserva)
     
     def visualizar_horarios_disponiveis(self, maquina_id: str, data: str):
-        # Todos os horários possíveis (8h às 20h)
         todos_horarios = [f"{hora:02d}:00" for hora in range(8, 20)]
         
-        # Horários ocupados
-        horarios_ocupados = []
-        for reserva in self.reservas:
-            if (reserva.maquina_id == maquina_id and 
-                reserva.data == data and 
-                reserva.status == "ativa"):
-                horarios_ocupados.append(reserva.hora_inicio)
+        reservas_ocupadas = obter_reservas_por_maquina_e_data(maquina_id, data)
+        horarios_ocupados = [reserva.hora_inicio for reserva in reservas_ocupadas]
         
-        # Retorna horários livres
         return [h for h in todos_horarios if h not in horarios_ocupados]
     
     def obter_reservas_por_usuario(self, usuario_id: str):
-        """Retorna todas as reservas de um usuário"""
-        return [r for r in self.reservas if r.usuario_id == usuario_id and r.status == "ativa"]
+        return obter_reservas_por_usuario_db(usuario_id)
     
-    def cancelar_reserva(self, id_reserva: str, usuario_id: str) -> bool:
-        for reserva in self.reservas:
-            if reserva.id_reserva == id_reserva and reserva.usuario_id == usuario_id:
-                reserva.status = "cancelada"
-                return True
+    def cancelar_reserva(self, id_reserva: int, usuario_id: str) -> bool:
+        reserva = obter_reserva_por_id(id_reserva)
+        # MUDANÇA: Verificando com os nomes de atributos corretos
+        if reserva and reserva.id_usuario == usuario_id and reserva.status_reserva == "ativa":
+            return atualizar_status_reserva(id_reserva, "cancelada")
         return False
 
-    def editar_reserva(self, id_reserva: str, usuario_id: str, nova_data: str, nova_hora: str):
-        for reserva in self.reservas:
-            if (reserva.id_reserva == id_reserva and 
-                reserva.usuario_id == usuario_id and
-                reserva.status == "ativa"):
-                # Verifica se novo horário está disponível
-                if not self._horario_disponivel(reserva.maquina_id, nova_data, nova_hora):
-                    return False  
-                
-                reserva.data = nova_data
-                reserva.hora_inicio = nova_hora
-                reserva.hora_fim = reserva._calcular_hora_fim(nova_hora)
-                return True
-        
-        return False  # Reserva não encontrada
+    def editar_reserva(self, id_reserva: int, usuario_id: str, nova_data: str, nova_hora: str) -> bool:
+        reserva_atual = obter_reserva_por_id(id_reserva)
+        # MUDANÇA: Verificando com os nomes de atributos corretos
+        if not (reserva_atual and reserva_atual.id_usuario == usuario_id and reserva_atual.status_reserva == "ativa"):
+            return False
 
-    def _horario_disponivel(self, maquina_id: str, data: str, hora_inicio: str):
-        for reserva in self.reservas:
-            if (reserva.maquina_id == maquina_id and 
-                reserva.data == data and 
-                reserva.hora_inicio == hora_inicio and
-                reserva.status == "ativa"):
-                return False  # Horário ocupado
-        return True  # Horário livre
+        # MUDANÇA: Usando 'reserva_atual.id_maquina'
+        if not self._horario_disponivel(reserva_atual.id_maquina, nova_data, nova_hora):
+            return False 
+        
+        nova_hora_fim = self._calcular_hora_fim(nova_hora)
+        return atualizar_data_hora_reserva(id_reserva, nova_data, nova_hora, nova_hora_fim)
+
+    def _horario_disponivel(self, maquina_id: str, data: str, hora_inicio: str) -> bool:
+        reservas_no_horario = obter_reservas_por_maquina_e_data(maquina_id, data)
+        for reserva in reservas_no_horario:
+            if reserva.hora_inicio == hora_inicio:
+                return False
+        return True

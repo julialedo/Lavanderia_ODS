@@ -102,4 +102,3 @@ def obter_maquina_por_id(id_maquina: int) -> Optional[Maquina]:
         return None
     finally:
         conn.close()  #fecha a conexão
-
