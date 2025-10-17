@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 from banco_de_dados.conexao_bd import conectar 
+
 
 @dataclass
 class Reserva:
@@ -17,6 +18,7 @@ class Reserva:
 # --- Funções de Interação com o Banco de Dados ---
 
 def criar_reserva(reserva: Reserva) -> Reserva:
+    print(f"DEBUG: Data recebida no modelo: {reserva.data_reserva}")
     """Insere uma nova reserva no banco de dados."""
     # MUDANÇA: Tabela 'reservas' e nomes das colunas atualizados
     sql = """
@@ -34,13 +36,15 @@ def criar_reserva(reserva: Reserva) -> Reserva:
         ))
         conn.commit()
         cur.close()
+        print(f"DEBUG: Data saindo no modelo: {reserva.data_reserva}")
         return reserva
     finally:
         conn.close()
 
+
+
 def obter_reservas_por_maquina_e_data(maquina_id: str, data: str) -> List[Reserva]:
     """Busca todas as reservas ativas para uma máquina em uma data específica."""
-    # MUDANÇA: Tabela 'reservas' e nomes das colunas atualizados
     sql = "SELECT * FROM reservas WHERE id_maquina = %s AND data_reserva = %s AND status_reserva = 'ativa'"
     conn = conectar()
     reservas_ativas = []
@@ -48,7 +52,21 @@ def obter_reservas_por_maquina_e_data(maquina_id: str, data: str) -> List[Reserv
         cur = conn.cursor()
         cur.execute(sql, (maquina_id, data))
         for row in cur.fetchall():
-            reservas_ativas.append(Reserva(*row))
+            # Converter a row para uma lista mutável
+            row_list = list(row)
+            # Se hora_inicio é timedelta, converter para string
+            if isinstance(row_list[4], timedelta):  # hora_inicio está na posição 4
+                total_seconds = int(row_list[4].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                row_list[4] = f"{hours:02d}:{minutes:02d}:00"
+            if isinstance(row_list[5], timedelta):  # hora_fim está na posição 5
+                total_seconds = int(row_list[5].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                row_list[5] = f"{hours:02d}:{minutes:02d}:00"
+            
+            reservas_ativas.append(Reserva(*row_list))
         cur.close()
         return reservas_ativas
     finally:
