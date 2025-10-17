@@ -19,7 +19,7 @@ class Usuario:
 # -- Criar conta de administrador do prédio
 def criar_administrador_predio(nome: str, email: str, senha: str, telefone: str, id_lavanderia: int):
     
-    sql = "INSERT INTO usuario (nome, email, senha, telefone, tipo_usuario, status_conta, id_lavanderia) VALUES (%s, %s, %s, %s, 'admin_predio', 'ativo', %s)"
+    sql = "INSERT INTO usuario (nome, email, senha, telefone, tipo_usuario, status_conta, id_lavanderia) VALUES (%s, %s, %s, %s, 'adm_predio', 'ativa', %s)"
     conn = conectar() #abre conexão
     try:
         cur = conn.cursor()
