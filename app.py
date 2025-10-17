@@ -30,33 +30,69 @@ def tela_login():
     st.title("🔐 Login - Sistema de Lavanderia")
     st.markdown("---")
 
-    usuario = st.text_input("Usuário")
+    st.info("Para testar o aplicativo sem o MySQL, use:\n- Admin de Prédio: Email: `admin@predio.com`, Senha: `123`\n- Morador: Email: `morador@predio.com`, Senha: `123`\n- Admin de Plataforma: Email: `plataforma@admin.com`, Senha: `123`")
+
+    usuario = st.text_input("E-mail")
     senha = st.text_input("Senha", type="password")
 
     if st.button("Entrar", use_container_width=True):
+        
+        # Simulação de Login (Mock)
+        if usuario in ["admin@predio.com", "morador@predio.com", "plataforma@admin.com"] and senha == "123":
+            if usuario == "admin@predio.com":
+                st.session_state["logado"] = True
+                st.session_state["usuario"] = "Admin Predial"
+                st.session_state["tipo"] = "adm_predio"
+                st.session_state["id_lavanderia"] = 1 # Mock ID
+                st.session_state.pagina = "inicial"
+            elif usuario == "morador@predio.com":
+                st.session_state["logado"] = True
+                st.session_state["usuario"] = "Morador Apto 101"
+                st.session_state["tipo"] = "morador"
+                st.session_state["id_lavanderia"] = 1 # Mock ID
+                st.session_state.pagina = "usuario"
+            elif usuario == "plataforma@admin.com":
+                st.session_state["logado"] = True
+                st.session_state["usuario"] = "Admin Plataforma"
+                st.session_state["tipo"] = "adm_plataforma"
+                st.session_state["id_lavanderia"] = None
+                st.session_state.pagina = "adm_plataforma"
+                
+            st.success(f"Bem-vindo, {st.session_state['usuario']}! (Modo Simulação)")
+            st.rerun()
+            return
+            
+        # Lógica original de Login (com Conexão ao Banco)
         conexao = conectar()
         if conexao:
-            cursor = conexao.cursor(dictionary=True)
-            query = "SELECT * FROM usuario WHERE email=%s AND senha=%s"
-            cursor.execute(query, (usuario, senha))
-            resultado = cursor.fetchone()
+            try:
+                cursor = conexao.cursor(dictionary=True)
+                query = "SELECT * FROM usuario WHERE email=%s AND senha=%s"
+                cursor.execute(query, (usuario, senha))
+                resultado = cursor.fetchone()
 
-            if resultado:
-                st.session_state["logado"] = True
-                st.session_state["usuario"] = resultado["nome"]
-                st.session_state["tipo"] = resultado["tipo_usuario"]
-                st.session_state["id_lavanderia"] = resultado.get("id_lavanderia")
+                if resultado:
+                    st.session_state["logado"] = True
+                    st.session_state["usuario"] = resultado["nome"]
+                    st.session_state["tipo"] = resultado["tipo_usuario"]
+                    st.session_state["id_lavanderia"] = resultado.get("id_lavanderia")
 
-                st.success(f"Bem-vindo, {resultado['nome']}!")
-                if resultado["tipo_usuario"] == "adm_plataforma":
-                    st.session_state.pagina = "adm_plataforma"
-                    st.rerun()
+                    st.success(f"Bem-vindo, {resultado['nome']}!")
+                    if resultado["tipo_usuario"] == "adm_plataforma":
+                        st.session_state.pagina = "adm_plataforma"
+                        st.rerun()
+                    else:
+                        st.session_state.pagina = "inicial"
+                        st.rerun()
                 else:
-                    st.session_state.pagina = "inicial"
-                    st.rerun()
-            else:
-                st.error("Usuário ou senha incorretos.")
-            conexao.close()
+                    st.error("Usuário ou senha incorretos.")
+            except Exception as e:
+                st.error(f"Erro ao tentar logar com o banco de dados: {e}")
+            finally:
+                conexao.close()
+        else:
+             st.warning("Falha na conexão com o banco. Tentando login de simulação...")
+
 
 
 # Tela Inicial:
@@ -187,6 +223,9 @@ def tela_usuario():
     st.title("👤 Área do Morador")
     st.markdown("---")
     
+    # Inicializar controladores
+    controlador_maquina = ControladorMaquina()
+    
     tab1, tab2, tab3 = st.tabs(["📅 Visualizar Horários", "⏰ Fazer Agendamento", "📋 Minhas Reservas"])
     
     with tab1:
@@ -195,18 +234,30 @@ def tela_usuario():
         col1, col2 = st.columns(2)
         
         with col1:
-            # Máquinas de exemplo (depois vem do banco)
-            maquinas = ["Máquina 1 - Lavadora", "Máquina 2 - Secadora", "Máquina 3 - Lavadora"]
-            maquina_selecionada = st.selectbox("Selecione a máquina:", maquinas)
+            # Buscar máquinas reais do banco (substituindo os dados fictícios)
+            maquinas = controlador_maquina.listar_por_lavanderia(1)  # Assumindo lavanderia ID 1
+            if maquinas:
+                # Criar lista no formato antigo
+                opcoes_maquinas = []
+                for maquina in maquinas:
+                    if maquina.status_maquina != "manutencao":
+                        descricao = f"Máquina {maquina.id_maquina} - {maquina.tipo_maquina}"
+                        opcoes_maquinas.append(descricao)
+                
+                maquina_selecionada = st.selectbox("Selecione a máquina:", opcoes_maquinas)
+                # Extrair ID da máquina da descrição selecionada
+                maquina_id = maquina_selecionada.split(" ")[1]  # Pega o número após "Máquina "
+            else:
+                # Fallback para dados fictícios se não houver máquinas
+                maquinas = ["Máquina 1 - Lavadora", "Máquina 2 - Secadora", "Máquina 3 - Lavadora"]
+                maquina_selecionada = st.selectbox("Selecione a máquina:", maquinas)
+                maquina_id = "1" if "1" in maquina_selecionada else "2"
         
         with col2:
             data_selecionada = st.date_input("Selecione a data")
         
         if st.button("🔍 Ver Horários Disponíveis"):
-            # Converter para ID da máquina (mock)
-            maquina_id = "M001" if "1" in maquina_selecionada else "M002"
-            
-            # Usar SEU controlador para buscar horários reais
+            # Usar controlador real para buscar horários
             horarios_disponiveis = controlador_reserva.visualizar_horarios_disponiveis(
                 maquina_id, 
                 data_selecionada.strftime("%Y-%m-%d")
@@ -214,7 +265,7 @@ def tela_usuario():
             
             st.subheader(f"Horários disponíveis - {maquina_selecionada}")
             
-            # Mostrar horários em colunas
+            # Mostrar horários em colunas (mantendo o formato original)
             if horarios_disponiveis:
                 cols = st.columns(4)
                 for i, horario in enumerate(horarios_disponiveis):
@@ -231,28 +282,45 @@ def tela_usuario():
             col1, col2 = st.columns(2)
             
             with col1:
-                maquina = st.selectbox(
-                    "Selecione a máquina",
-                    ["Máquina 1 - Lavadora (Térreo)", "Máquina 2 - Secadora (Térreo)", "Máquina 3 - Lavadora (1º Andar)"],
-                    key="agendamento_maquina"
-                )
+                # Buscar máquinas reais
+                maquinas = controlador_maquina.listar_por_lavanderia(1)
+                if maquinas:
+                    opcoes_maquinas = []
+                    for maquina in maquinas:
+                        if maquina.status_maquina != "manutencao":
+                            descricao = f"Máquina {maquina.id_maquina} - {maquina.tipo_maquina} ({maquina.capacidade})"
+                            opcoes_maquinas.append(descricao)
+                    
+                    maquina = st.selectbox(
+                        "Selecione a máquina",
+                        opcoes_maquinas,
+                        key="agendamento_maquina"
+                    )
+                    # Extrair ID da descrição
+                    maquina_id = maquina.split(" ")[1]
+                else:
+                    # Fallback para dados fictícios
+                    maquina = st.selectbox(
+                        "Selecione a máquina",
+                        ["Máquina 1 - Lavadora (Térreo)", "Máquina 2 - Secadora (Térreo)", "Máquina 3 - Lavadora (1º Andar)"],
+                        key="agendamento_maquina"
+                    )
+                    maquina_id = "1" if "1" in maquina else "2"
                 
                 data_agendamento = st.date_input("Data do agendamento", key="agendamento_data")
             
             with col2:
-                # Horários disponíveis para seleção
+                # Horários disponíveis para seleção (mantendo o formato original)
                 horarios = [f"{hora:02d}:00" for hora in range(8, 20)]
                 hora_agendamento = st.selectbox("Horário de início", horarios)
                 
-                usuario = st.text_input("Seu nome*", placeholder="Digite seu nome")
+                usuario = st.text_input("Seu ID*", placeholder="Digite seu ID")
             
             if st.form_submit_button("📅 Fazer Agendamento"):
                 if usuario:
-                    # Converter para IDs (mock)
-                    maquina_id = "M001" if "1" in maquina else "M002"
+                    # Usar controlador real para criar reserva
                     usuario_id = usuario.lower().replace(" ", "")
-                    
-                    # Usar SEU controlador para fazer reserva real
+                    print("DEBUG : {data_agendamento.strftime('%Y-%m-%d')}")
                     reserva = controlador_reserva.criar_reserva(
                         maquina_id,
                         usuario_id,
@@ -265,13 +333,13 @@ def tela_usuario():
                     else:
                         st.error("❌ Erro ao fazer reserva. Tente novamente.")
                 else:
-                    st.warning("⚠️ Por favor, digite seu nome.")
+                    st.warning("⚠️ Por favor, digite seu ID.")
     
     with tab3:
         st.subheader("Minhas Reservas")
         
-        usuario_consulta = st.text_input("Digite seu nome para ver suas reservas:", 
-                                       placeholder="Seu nome", 
+        usuario_consulta = st.text_input("Digite seu ID para ver suas reservas:", 
+                                       placeholder="Seu ID", 
                                        key="minhas_reservas")
         
         if usuario_consulta:
@@ -282,14 +350,14 @@ def tela_usuario():
                 st.success(f"📋 Você tem {len(reservas)} reserva(s) ativa(s)")
                 
                 for reserva in reservas:
-                    with st.expander(f"Reserva {reserva.id_reserva} - {reserva.data} às {reserva.hora_inicio}"):
+                    with st.expander(f"Reserva {reserva.id_reserva} - {reserva.data_reserva} às {reserva.hora_inicio}"):
                         col1, col2 = st.columns([3, 1])
                         
                         with col1:
-                            st.write(f"**Máquina ID:** {reserva.maquina_id}")
-                            st.write(f"**Data:** {reserva.data}")
+                            st.write(f"**Máquina ID:** {reserva.id_maquina}")
+                            st.write(f"**Data:** {reserva.data_reserva}")
                             st.write(f"**Horário:** {reserva.hora_inicio} - {reserva.hora_fim}")
-                            st.write(f"**Status:** {reserva.status}")
+                            st.write(f"**Status:** {reserva.status_reserva}")
                         
                         with col2:
                             if st.button("❌ Cancelar", key=f"cancel_{reserva.id_reserva}"):
@@ -298,6 +366,8 @@ def tela_usuario():
                                     st.rerun()
             else:
                 st.info("📭 Você não possui reservas ativas.")
+                
+
 
 
 # Tela de Relatórios:
