@@ -1,8 +1,6 @@
-""" 
-Model - lavanderia.py
-Responsável pela persistência (consultas SQL), mapeamento simples entre linha do banco ↔ objeto Python. 
-Todas as operações CRUD com o MySQL. Onde cuidamos da integridade dos dados e do uso do conector (conexao_bd.conectar()). 
-"""
+# Model - lavanderia.py
+# Responsável pela persistência (consultas SQL), mapeamento simples entre linha do banco ↔ objeto Python. 
+# Todas as operações CRUD com o MySQL. Onde cuidamos da integridade dos dados e do uso do conector (conexao_bd.conectar()). 
 
 from dataclasses import dataclass
 from typing import Optional, List
@@ -17,10 +15,11 @@ class Lavanderia:
     data_cadastro_lav: Optional[str]
     qtd_maquinas: Optional[int]
 
-# -- Criar lavanderia
+
+# Cadastrar Lavanderia:
 def criar_lavanderia(lav: Lavanderia) -> int:
     
-    sql = "INSERT INTO lavanderia (id_adm_predio, nome, endereco, data_cadastro_lav, qtd_maquinas) VALUES (%s, %s, %s, NOW(), 0)"
+    sql = "INSERT INTO lavanderia (id_adm_predio, nome, endereco, data_cadastro_lav, qtd_maquinas) VALUES (%s, %s, %s, NOW(), 0)" #query
     conn = conectar()  #abre a conexão
     try:
         cur = conn.cursor()
@@ -31,7 +30,7 @@ def criar_lavanderia(lav: Lavanderia) -> int:
         conn.close()  #fecha a conexão
 
 
-# -- Listar lavanderias
+# Listar Lavanderias:
 def listar_lavanderias() -> List[Lavanderia]:
     
     sql = "SELECT id_lavanderia, id_adm_predio, nome, endereco, data_cadastro_lav, qtd_maquinas FROM lavanderia"
@@ -47,7 +46,7 @@ def listar_lavanderias() -> List[Lavanderia]:
         conn.close() #fecha
 
 
-# -- Contar lavanderias
+# Contar quantas Lavanderias tem cadastradas:
 def contar_lavanderias() -> int:
     
     sql = "SELECT COUNT(*) FROM lavanderia"

@@ -1,10 +1,8 @@
-""" 
-Model - maquina.py
-Responsável pela persistência (consultas SQL), mapeamento simples entre linha do banco ↔ objeto Python. 
-Todas as operações CRUD com o MySQL. Onde cuidamos da integridade dos dados e do uso do conector (conexao_bd.conectar()). 
-"""
+# Model - maquina.py
+# Responsável pela persistência (consultas SQL), mapeamento simples entre linha do banco ↔ objeto Python. 
+# Todas as operações CRUD com o MySQL. Onde cuidamos da integridade dos dados e do uso do conector (conexao_bd.conectar()). 
 
-from dataclasses import dataclass   #cria um "molde" para a classe (COM init, repr)
+from dataclasses import dataclass   #cria um "molde" para a classe (com init, repr)
 from typing import Optional, List
 from banco_de_dados.conexao_bd import conectar
 
@@ -14,11 +12,11 @@ class Maquina:
     id_lavanderia: int
     codigo_maquina: str
     tipo_maquina: str    # lavadora ou secadora
-    status_maquina: str  # livre, em_uso ou manutenção
+    status_maquina: str  # livre, em_uso, manutenção
     capacidade: str
 
 
-# -- Cadastra Máquina no Banco
+# Cadastrar Máquina no Banco:
 def criar_maquina(maquina: Maquina) -> int:
     
     sql = " INSERT INTO maquina (id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade) VALUES (%s, %s, %s, %s, %s)"
@@ -35,7 +33,7 @@ def criar_maquina(maquina: Maquina) -> int:
         conn.close()  #fecha a conexão
 
 
-# -- Atualiza Máquina no Banco
+# Atualizar Máquina no Banco:
 def atualizar_maquina(id_maquina: int, campos: dict) -> bool:   #campos: dicionario com colunas e dados a atualizar
     
     set_clause = ", ".join(f"{k} = %s" for k in campos.keys())  #organiza os campos em uma "string" set_clause
@@ -54,7 +52,7 @@ def atualizar_maquina(id_maquina: int, campos: dict) -> bool:   #campos: diciona
         conn.close() #fecha a conexão
 
 
-# -- Deletar Máquinas no Banco
+# Deletar Máquinas no Banco:
 def deletar_maquina(id_maquina: int) -> bool:
     
     sql = "DELETE FROM maquina WHERE id_maquina = %s" #comando sql delete
@@ -70,7 +68,7 @@ def deletar_maquina(id_maquina: int) -> bool:
         conn.close() #fecha a conexão
 
 
-# -- Listar Máquinas por lavanderia
+# Listar Máquinas por lavanderia:
 def listar_maquinas_por_lavanderia(id_lavanderia: int) -> List[Maquina]:
    
     sql = "SELECT id_maquina, id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade FROM maquina WHERE id_lavanderia = %s" #comando sql select
@@ -87,7 +85,7 @@ def listar_maquinas_por_lavanderia(id_lavanderia: int) -> List[Maquina]:
         conn.close() #fecha a conexão
 
 
-# -- Acessar uma Máquina especifica pelo id dela
+# Acessar uma Máquina especifica pelo id dela:
 def obter_maquina_por_id(id_maquina: int) -> Optional[Maquina]:
     
     sql = "SELECT id_maquina, id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade FROM maquina WHERE id_maquina = %s" #comando sql select

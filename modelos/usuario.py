@@ -1,3 +1,7 @@
+# Model - usuario.py
+# Responsável pela persistência (consultas SQL), mapeamento simples entre linha do banco ↔ objeto Python. 
+# Todas as operações CRUD com o MySQL. Onde cuidamos da integridade dos dados e do uso do conector (conexao_bd.conectar()). 
+
 from dataclasses import dataclass
 from typing import Optional, List
 from banco_de_dados.conexao_bd import conectar
@@ -16,7 +20,7 @@ class Usuario:
     id_lavanderia: Optional[int]  # pode ser None se for admin da plataforma
 
 
-# -- Criar conta de administrador do prédio
+# Criar conta de administrador do prédio:
 def criar_administrador_predio(nome: str, email: str, senha: str, telefone: str, id_lavanderia: int):
     
     sql = "INSERT INTO usuario (nome, email, senha, telefone, tipo_usuario, status_conta, id_lavanderia) VALUES (%s, %s, %s, %s, 'adm_predio', 'ativa', %s)"
@@ -30,6 +34,7 @@ def criar_administrador_predio(nome: str, email: str, senha: str, telefone: str,
         conn.close() #fecha
 
 
+# Contar quantidade de usuarios:
 def contar_usuarios() -> int:
     sql = "SELECT COUNT(*) FROM usuario"
     conn = conectar()
