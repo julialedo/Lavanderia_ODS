@@ -1,7 +1,3 @@
-# Controller - controlador_reserva.py  
-# Responsável pelas validações, por transformar dados para o model, decisões.
-# Não faz acesso direto ao banco, chama funções do Model. Retorna resultados para a View.
-
 from datetime import datetime
 from modelos.reserva import (
     Reserva, 
@@ -27,33 +23,41 @@ class ControladorReserva:
         total = contar_total_reservas()
         return total + 1
     
-    def criar_reserva(self, maquina_id: str, usuario_id: str, data: str, hora_inicio: str):
-        if not self._horario_disponivel(maquina_id, data, hora_inicio):
+    def criar_reserva(self, maquina_id: str, usuario_id: str, data_agendamento: str, hora_inicio: str):
+        print(f"DEBUG: Tentando criar reserva - Máquina: {maquina_id}, Usuário: {usuario_id}, Data: {data_agendamento}, Hora: {hora_inicio}")
+        if not self._horario_disponivel(maquina_id, data_agendamento, hora_inicio):
+        
             return None
         
         id_reserva = self.obter_proximo_id()
+        print(f"DEBUG: Próximo ID gerado: {id_reserva}")
         hora_fim = self._calcular_hora_fim(hora_inicio)
         
         nova_reserva = Reserva(
             id_reserva=id_reserva, 
             id_maquina=maquina_id, 
             id_usuario=usuario_id, 
-            data_reserva=data, 
+            data_reserva=data_agendamento, 
             hora_inicio=hora_inicio,
             hora_fim=hora_fim,
             status_reserva="ativa"
         )
-
+        print(f"DEBUG: Reserva criada - {nova_reserva}")
+        print(f"DEBUG: Data saída no controlador: {data_agendamento}")
         return criar_reserva(nova_reserva)
     
+
     def visualizar_horarios_disponiveis(self, maquina_id: str, data: str):
         todos_horarios = [f"{hora:02d}:00" for hora in range(8, 20)]
-        
-        reservas_ocupadas = obter_reservas_por_maquina_e_data(maquina_id, data)
-        horarios_ocupados = [reserva.hora_inicio for reserva in reservas_ocupadas]
-        
-        return [h for h in todos_horarios if h not in horarios_ocupados]
     
+        reservas_ocupadas = obter_reservas_por_maquina_e_data(maquina_id, data)
+    
+        # Agora as horas já vêm como strings do modelo, podemos usar diretamente
+        horarios_ocupados = [reserva.hora_inicio[:5] for reserva in reservas_ocupadas]
+        
+        print(f"DEBUG - Horários ocupados: {horarios_ocupados}")
+        return [h for h in todos_horarios if h not in horarios_ocupados]
+
     def obter_reservas_por_usuario(self, usuario_id: str):
         return obter_reservas_por_usuario_db(usuario_id)
     
