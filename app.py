@@ -15,6 +15,7 @@ from banco_de_dados.conexao_bd import conectar
 # --- Inicialização dos controladores ---
 controlador_reserva = ControladorReserva()
 controlador_maquina = ControladorMaquina()
+controlador_plataforma = ControladorPlataforma()
 
 # --- Configurações gerais ---
 st.set_page_config(
