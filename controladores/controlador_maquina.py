@@ -1,6 +1,7 @@
 # Controller - controlador_maquina.py 
 # Responsável pelas validações, transformar dados para o model, decisões.
-# Não faz acesso direto ao banco, chama funções do Model. Retorna resultados para a View 
+# Não faz acesso direto ao banco, chama funções do Model. Retorna resultados para a View.
+# Aqui entra as regras de negócio do tipo "regra de validação" que controla o fluxo da aplicação (ex: verificar se todos os campos obrigatórios foram preenchidos pelo usuario).
 
 from modelos.maquina import Maquina, criar_maquina, atualizar_maquina, deletar_maquina, listar_maquinas_por_lavanderia, obter_maquina_por_id
 
