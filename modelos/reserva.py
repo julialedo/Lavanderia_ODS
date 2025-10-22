@@ -1,26 +1,25 @@
 # Model - reserva.py
-# Responsável pela persistência (consultas SQL), mapeamento simples entre linha do banco ↔ objeto Python. 
-# Todas as operações CRUD com o MySQL. Onde cuidamos da integridade dos dados e do uso do conector (conexao_bd.conectar()). 
+# Responsável pela persistência (consultas SQL), mapeamento simples entre linha do banco ↔ objeto Python e todas as operações CRUD com o MySQL.
+# É onde cuidamos da integridade dos dados e do uso do conector (conexao_bd.conectar()). 
+# Aqui entra regras de negócio do tipo "regra de domínio", que descrevem o comportamento do mundo real (ex: uma maquina nao pode ser reservadas por dois ao mesmo tempo)
 
 from dataclasses import dataclass
 from typing import Optional, List
 from datetime import datetime, timedelta
 from banco_de_dados.conexao_bd import conectar 
 
-
 @dataclass
 class Reserva:
     id_reserva: int
-    id_maquina: str   # MUDANÇA: de 'maquina_id' para 'id_maquina'
-    id_usuario: str   # MUDANÇA: de 'usuario_id' para 'id_usuario'
-    data_reserva: str # MUDANÇA: de 'data' para 'data_reserva'
+    id_maquina: str   
+    id_usuario: str   
+    data_reserva: str 
     hora_inicio: str
     hora_fim: str
-    status_reserva: str # MUDANÇA: de 'status' para 'status_reserva'
-    # MUDANÇA: A coluna 'data_criacao' foi removida para corresponder ao banco de dados
+    status_reserva: str 
 
-# --- Funções de Interação com o Banco de Dados ---
 
+# Criar uma reserva:
 def criar_reserva(reserva: Reserva) -> Reserva:
     print(f"DEBUG: Data recebida no modelo: {reserva.data_reserva}")
     """Insere uma nova reserva no banco de dados."""
