@@ -50,7 +50,29 @@ def criar_administrador_predio(nome: str, email: str, senha: str, telefone: str,
     finally:
         conn.close() #fecha conexão
 
+def editar_usuario(id_usuario: int, nome: str, email: str, telefone: str, nova_senha: Optional[str] = None):
+    # Base SQL para atualização
+    sql = "UPDATE usuario SET nome = %s, email = %s, telefone = %s"
+    params = [nome, email, telefone]
+    
+    # Se uma nova senha for fornecida, adicione-a ao SQL e aos parâmetros
+    if nova_senha:
+        sql += ", senha = %s"
+        params.append(nova_senha)
+        
+    sql += " WHERE id_usuario = %s"
+    params.append(id_usuario)
 
+    conn = conectar() #abre conexão
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, tuple(params)) # Converte a lista de parâmetros para tupla
+        conn.commit()
+        rows_affected = cur.rowcount # Verifica se alguma linha foi alterada
+        cur.close()
+        return rows_affected > 0 # Retorna True se houve alteração
+    finally:
+        conn.close() #fecha conexão
 # Contar quantidade de usuarios:
 def contar_usuarios() -> int:
 
