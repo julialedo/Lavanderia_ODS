@@ -148,15 +148,53 @@ def atualizar_data_hora_reserva(id_reserva: str, nova_data: str, nova_hora: str,
     finally:
         conn.close()
 
-def obter_maior_id_reserva() -> int:
-    """Retorna o maior ID de reserva existente"""
-    sql = "SELECT COALESCE(MAX(id_reserva), 0) FROM reservas"
+def contar_total_reservas() -> int:
+    """Conta o número total de reservas já criadas para gerar o próximo ID."""
+    # MUDANÇA: Tabela 'reservas'
+    sql = "SELECT COUNT(*) FROM reservas"
     conn = conectar()
     try:
         cur = conn.cursor()
         cur.execute(sql)
-        maior_id = cur.fetchone()[0]
+        total = cur.fetchone()[0]
         cur.close()
-        return maior_id
+        return total
+    finally:
+        conn.close()
+
+def obter_reservas_por_lavanderia_e_periodo(id_lavanderia: int, data_inicial: str, data_final: str) -> List[Reserva]:
+    """Busca todas as reservas de uma lavanderia em um período específico."""
+    sql = """
+        SELECT r.* 
+        FROM reservas r
+        JOIN maquina m ON r.id_maquina = m.id_maquina
+        WHERE m.id_lavanderia = %s 
+        AND r.data_reserva BETWEEN %s AND %s
+        AND r.status_reserva = 'ativa'
+        ORDER BY r.data_reserva, r.hora_inicio
+    """
+    conn = conectar()
+    reservas = []
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_lavanderia, data_inicial, data_final))
+        for row in cur.fetchall():
+            # Converter a row para uma lista mutável
+            row_list = list(row)
+            # Se hora_inicio é timedelta, converter para string
+            if isinstance(row_list[4], timedelta):  # hora_inicio está na posição 4
+                total_seconds = int(row_list[4].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                row_list[4] = f"{hours:02d}:{minutes:02d}"
+            if isinstance(row_list[5], timedelta):  # hora_fim está na posição 5
+                total_seconds = int(row_list[5].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                row_list[5] = f"{hours:02d}:{minutes:02d}"
+            
+            reservas.append(Reserva(*row_list))
+        cur.close()
+        return reservas
     finally:
         conn.close()
