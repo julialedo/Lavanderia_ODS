@@ -102,7 +102,18 @@ def obter_reserva_por_id(id_reserva: str) -> Optional[Reserva]:
         row = cur.fetchone()
         cur.close()
         if row:
-            return Reserva(*row)
+            row_list = list(row)
+            reserva_corrigida = Reserva(
+                id_reserva=row[0],     
+                id_maquina=str(row[2]),     
+                id_usuario=str(row[1]),     
+                data_reserva=str(row[3]),
+                hora_inicio=row[4],
+                hora_fim=row[5],
+                status_reserva=row[6]
+            )
+            
+            return reserva_corrigida        
         return None
     finally:
         conn.close()
@@ -137,16 +148,15 @@ def atualizar_data_hora_reserva(id_reserva: str, nova_data: str, nova_hora: str,
     finally:
         conn.close()
 
-def contar_total_reservas() -> int:
-    """Conta o número total de reservas já criadas para gerar o próximo ID."""
-    # MUDANÇA: Tabela 'reservas'
-    sql = "SELECT COUNT(*) FROM reservas"
+def obter_maior_id_reserva() -> int:
+    """Retorna o maior ID de reserva existente"""
+    sql = "SELECT COALESCE(MAX(id_reserva), 0) FROM reservas"
     conn = conectar()
     try:
         cur = conn.cursor()
         cur.execute(sql)
-        total = cur.fetchone()[0]
+        maior_id = cur.fetchone()[0]
         cur.close()
-        return total
+        return maior_id
     finally:
         conn.close()
