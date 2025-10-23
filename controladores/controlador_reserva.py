@@ -1,4 +1,10 @@
-from datetime import datetime, timedelta
+# Controller - controlador_reserva.py
+# Responsável pelas validações, transformar dados para o model, decisões.
+# Não faz acesso direto ao banco, chama funções do Model. Retorna resultados para a View.
+# Aqui entra as regras de negócio do tipo "regra de validação" que controla o fluxo da aplicação (ex: verificar se todos os campos obrigatórios foram preenchidos pelo usuario).
+
+
+from datetime import datetime
 from modelos.reserva import (
     Reserva, 
     criar_reserva, 
@@ -7,7 +13,7 @@ from modelos.reserva import (
     obter_reserva_por_id,
     atualizar_status_reserva,
     atualizar_data_hora_reserva,
-    obter_maior_id_reserva
+    contar_total_reservas
 )
 
 class ControladorReserva:
@@ -20,9 +26,8 @@ class ControladorReserva:
         return f"{hora_fim:02d}:00"
 
     def obter_proximo_id(self) -> int:
-        from modelos.reserva import obter_maior_id_reserva  # Vamos criar esta função
-        maior_id = obter_maior_id_reserva()
-        return maior_id + 1 if maior_id else 1
+        total = contar_total_reservas()
+        return total + 1
     
     def criar_reserva(self, maquina_id: str, usuario_id: str, data_agendamento: str, hora_inicio: str):
         print(f"DEBUG: Tentando criar reserva - Máquina: {maquina_id}, Usuário: {usuario_id}, Data: {data_agendamento}, Hora: {hora_inicio}")
@@ -69,7 +74,7 @@ class ControladorReserva:
             return atualizar_status_reserva(id_reserva, "cancelada")
         return False
 
-    def editar_reserva_antiga(self, id_reserva: int, usuario_id: str, nova_data: str, nova_hora: str) -> bool:
+    def editar_reserva(self, id_reserva: int, usuario_id: str, nova_data: str, nova_hora: str) -> bool:
         reserva_atual = obter_reserva_por_id(id_reserva)
         # MUDANÇA: Verificando com os nomes de atributos corretos
         if not (reserva_atual and reserva_atual.id_usuario == usuario_id and reserva_atual.status_reserva == "ativa"):
@@ -81,52 +86,15 @@ class ControladorReserva:
         
         nova_hora_fim = self._calcular_hora_fim(nova_hora)
         return atualizar_data_hora_reserva(id_reserva, nova_data, nova_hora, nova_hora_fim)
-    
-    def editar_reserva(self, id_reserva: int, usuario_id: str, nova_data: str, nova_hora: str) -> bool:
-        print(f"🔍 DEBUG_EDICAO_1: Iniciando edição - Reserva: {id_reserva}, Usuário: {usuario_id}")
-        print(f"🔍 DEBUG_EDICAO_1: Nova data: {nova_data}, Nova hora: {nova_hora}")
-        
-        reserva_atual = obter_reserva_por_id(id_reserva)
-        print(f"🔍 DEBUG_EDICAO_2: Reserva atual: {reserva_atual}")
-        
-        if not reserva_atual:
-            print("❌ DEBUG_EDICAO_3: Reserva não encontrada")
-            return False
-            
-        print(f"🔍 DEBUG_EDICAO_4: Dados da reserva - Usuário: {reserva_atual.id_usuario}, Status: {reserva_atual.status_reserva}")
-        
-        # MUDANÇA: Verificando com os nomes de atributos corretos
-        if not (reserva_atual and reserva_atual.id_usuario == usuario_id and reserva_atual.status_reserva == "ativa"):
-            print("❌ DEBUG_EDICAO_5: Falha na validação (usuário ou status)")
-            return False
-            
-        print("✅ DEBUG_EDICAO_6: Validação do usuário e status OK")
-        
-        # MUDANÇA: Usando 'reserva_atual.id_maquina'
-        print(f"🔍 DEBUG_EDICAO_7: Verificando horário na máquina {reserva_atual.id_maquina}")
-        if not self._horario_disponivel(reserva_atual.id_maquina, nova_data, nova_hora):
-            print("❌ DEBUG_EDICAO_8: Horário não disponível")
-            return False 
-        
-        print("✅ DEBUG_EDICAO_9: Horário disponível")
-        
-        nova_hora_fim = self._calcular_hora_fim(nova_hora)
-        print(f"🔍 DEBUG_EDICAO_10: Hora fim calculada: {nova_hora_fim}")
-        
-        print("🔍 DEBUG_EDICAO_11: Chamando atualizar_data_hora_reserva...")
-        resultado = atualizar_data_hora_reserva(id_reserva, nova_data, nova_hora, nova_hora_fim)
-        print(f"🔍 DEBUG_EDICAO_12: Resultado da atualização: {resultado}")
-    
-        return resultado
 
     def _horario_disponivel(self, maquina_id: str, data: str, hora_inicio: str) -> bool:
         reservas_no_horario = obter_reservas_por_maquina_e_data(maquina_id, data)
         for reserva in reservas_no_horario:
-            if reserva.hora_inicio == hora_inicio and reserva.status_reserva == "ativa":
+            if reserva.hora_inicio == hora_inicio:
                 return False
         return True
 
- def listar_reservas_periodo(self, id_lavanderia: int, data_inicial: str, data_final: str):
+    def listar_reservas_periodo(self, id_lavanderia: int, data_inicial: str, data_final: str):
         """Lista reservas de uma lavanderia em um período específico"""
         from modelos.reserva import obter_reservas_por_lavanderia_e_periodo
         return obter_reservas_por_lavanderia_e_periodo(id_lavanderia, data_inicial, data_final)
