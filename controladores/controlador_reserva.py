@@ -125,3 +125,8 @@ class ControladorReserva:
             if reserva.hora_inicio == hora_inicio and reserva.status_reserva == "ativa":
                 return False
         return True
+
+ def listar_reservas_periodo(self, id_lavanderia: int, data_inicial: str, data_final: str):
+        """Lista reservas de uma lavanderia em um período específico"""
+        from modelos.reserva import obter_reservas_por_lavanderia_e_periodo
+        return obter_reservas_por_lavanderia_e_periodo(id_lavanderia, data_inicial, data_final)
