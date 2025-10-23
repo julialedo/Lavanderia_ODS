@@ -18,12 +18,28 @@ def tela_adm_predio():
     st.title("👨‍💼 Área do Administrador do Prédio")
     st.markdown("---")
 
+    st.sidebar.title("Menu")
+    # Mostrar nome do usuário logado
+    if "usuario" in st.session_state:
+        st.sidebar.write(f"👤 Usuário: {st.session_state['usuario']}")
+    # Botão de logout
+    if st.sidebar.button("🚪 Sair"):
+        st.session_state.clear()
+        st.rerun()
+
+    # Exibe o código/nome da lavanderia se estiver na session_state
+    codigo_lavanderia = st.session_state.get("codigo_lavanderia", "Não Definido")
+    st.subheader(f"Lavanderia: **{codigo_lavanderia}**")
+    st.markdown("---")
+    # ----------------------------------------------------
+
+
     if "subpagina_adm_predio" not in st.session_state:
         st.session_state["subpagina_adm_predio"] = None
 
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("👨‍💼 Gerenciar Maquinas")
+        st.subheader("⚙️ Gerenciar Maquinas") # Subheader ajustado para ícone
         if st.button("Gerenciar Máquinas", use_container_width=True):
             #st.session_state["subpagina_adm_predio"] = "gerenciar_maquinas"
             gerenciar_maquinas()
@@ -36,7 +52,6 @@ def tela_adm_predio():
             st.rerun()
 
     st.markdown("---")
-
 
 # Tela de Gerenciamento de Máquinas:
 def gerenciar_maquinas():
