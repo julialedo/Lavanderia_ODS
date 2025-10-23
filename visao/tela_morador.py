@@ -12,7 +12,16 @@ controlador_maquina = ControladorMaquina()
 
 # Tela inicial do Morador:
 def tela_morador():
-    
+
+    st.sidebar.title("Menu")
+    # Mostrar nome do usuário logado
+    if "usuario" in st.session_state:
+        st.sidebar.write(f"👤 Usuário: {st.session_state['usuario']}")
+    # Botão de logout
+    if st.sidebar.button("🚪 Sair"):
+        st.session_state.clear()
+        st.rerun()
+
     st.title("👤 Área do Morador")
     st.markdown("---")
     
