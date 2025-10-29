@@ -2,4 +2,4 @@ streamlit
 typing
 dataclasses
 datetime
-matplotlib.pyplot
+matplotlib
