@@ -3,3 +3,4 @@ typing
 dataclasses
 datetime
 matplotlib
+mysql-connector-python
