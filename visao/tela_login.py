@@ -26,6 +26,12 @@ def tela_login():
             st.session_state["tipo"] = usuario["tipo_usuario"]
             st.session_state["id_lavanderia"] = usuario.get("id_lavanderia")
 
+            if "id_usuario" in usuario:
+                st.session_state["id_usuario"] = usuario["id_usuario"]
+            else:
+                st.error("Erro: Não obteve o ID do usuário")
+                return
+
             st.success(f"Bem-vindo, {usuario['nome']}!")
 
             if usuario["tipo_usuario"] == "adm_plataforma":
