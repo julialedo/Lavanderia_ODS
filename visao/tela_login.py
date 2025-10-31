@@ -18,29 +18,26 @@ def tela_login():
 
     if st.button("Entrar", use_container_width=True):              
         try:
-            usuario = controlador_usuario.login(email, senha)   #chama login em controlador
+            usuario = controlador_usuario.login(email, senha)   # chama login no controlador
 
-            #salva nome, tipo... em estados
+            # ✅ Armazena todos os dados do usuário logado
             st.session_state["logado"] = True
-            st.session_state["nome"] = usuario["nome"]
+            st.session_state["usuario"] = usuario["nome"]
+            st.session_state["usuario_dados"] = usuario  # 👈 agora o sistema inteiro tem acesso
             st.session_state["tipo"] = usuario["tipo_usuario"]
             st.session_state["id_lavanderia"] = usuario.get("id_lavanderia")
 
-            if "id_usuario" in usuario:
-                st.session_state["id_usuario"] = usuario["id_usuario"]
-            else:
-                st.error("Erro: Não obteve o ID do usuário")
-                return
-
             st.success(f"Bem-vindo, {usuario['nome']}!")
 
+            # Redirecionamento automático com base no tipo de usuário
             if usuario["tipo_usuario"] == "adm_plataforma":
-                st.session_state["pagina"] = "tela_adm_plataforma"  #salva estado de qual pagina deve ir
+                st.session_state["pagina"] = "tela_adm_plataforma"
             elif usuario["tipo_usuario"] == "adm_predio":
                 st.session_state["pagina"] = "tela_adm_predio"
             else:
                 st.session_state["pagina"] = "tela_morador"
 
             st.rerun()
+
         except Exception as e:
             st.error(str(e))
