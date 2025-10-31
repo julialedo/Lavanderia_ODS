@@ -1,7 +1,4 @@
 # Model - reserva.py
-# Responsável pela persistência (consultas SQL), mapeamento simples entre linha do banco ↔ objeto Python e todas as operações CRUD com o MySQL.
-# É onde cuidamos da integridade dos dados e do uso do conector (conexao_bd.conectar()). 
-# Aqui entra regras de negócio do tipo "regra de domínio", que descrevem o comportamento do mundo real (ex: uma maquina nao pode ser reservadas por dois ao mesmo tempo)
 
 from dataclasses import dataclass
 from typing import Optional, List
@@ -23,7 +20,6 @@ class Reserva:
 def criar_reserva(reserva: Reserva) -> Reserva:
     print(f"DEBUG: Data recebida no modelo: {reserva.data_reserva}")
     """Insere uma nova reserva no banco de dados."""
-    # MUDANÇA: Tabela 'reservas' e nomes das colunas atualizados
     sql = """
         INSERT INTO reservas 
         (id_reserva, id_maquina, id_usuario, data_reserva, hora_inicio, hora_fim, status_reserva) 
@@ -77,7 +73,6 @@ def obter_reservas_por_maquina_e_data(maquina_id: str, data: str) -> List[Reserv
 
 def obter_reservas_por_usuario(usuario_id: str) -> List[Reserva]:
     """Busca todas as reservas ativas de um usuário."""
-    # MUDANÇA: Tabela 'reservas' e nomes das colunas atualizados
     sql = "SELECT * FROM reservas WHERE id_usuario = %s AND status_reserva = 'ativa'"
     conn = conectar()
     reservas_usuario = []
@@ -93,7 +88,6 @@ def obter_reservas_por_usuario(usuario_id: str) -> List[Reserva]:
         
 def obter_reserva_por_id(id_reserva: str) -> Optional[Reserva]:
     """Busca uma reserva específica pelo seu ID."""
-    # MUDANÇA: Tabela 'reservas' e nome da coluna atualizados
     sql = "SELECT * FROM reservas WHERE id_reserva = %s"
     conn = conectar()
     try:
@@ -135,7 +129,6 @@ def atualizar_status_reserva(id_reserva: str, novo_status: str) -> bool:
 
 def atualizar_data_hora_reserva(id_reserva: str, nova_data: str, nova_hora: str, nova_hora_fim: str) -> bool:
     """Atualiza a data e hora de uma reserva."""
-    # MUDANÇA: Tabela 'reservas' e nome da coluna atualizados
     sql = "UPDATE reservas SET data_reserva = %s, hora_inicio = %s, hora_fim = %s WHERE id_reserva = %s"
     conn = conectar()
     try:
@@ -150,7 +143,6 @@ def atualizar_data_hora_reserva(id_reserva: str, nova_data: str, nova_hora: str,
 
 def contar_total_reservas() -> int:
     """Conta o número total de reservas já criadas para gerar o próximo ID."""
-    # MUDANÇA: Tabela 'reservas'
     sql = "SELECT COUNT(*) FROM reservas"
     conn = conectar()
     try:

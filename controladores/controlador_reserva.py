@@ -1,7 +1,4 @@
 # Controller - controlador_reserva.py
-# Responsável pelas validações, transformar dados para o model, decisões.
-# Não faz acesso direto ao banco, chama funções do Model. Retorna resultados para a View.
-# Aqui entra as regras de negócio do tipo "regra de validação" que controla o fluxo da aplicação (ex: verificar se todos os campos obrigatórios foram preenchidos pelo usuario).
 
 
 from datetime import datetime
@@ -58,7 +55,6 @@ class ControladorReserva:
     
         reservas_ocupadas = obter_reservas_por_maquina_e_data(maquina_id, data)
     
-        # Agora as horas já vêm como strings do modelo, podemos usar diretamente
         horarios_ocupados = [reserva.hora_inicio[:5] for reserva in reservas_ocupadas]
         
         print(f"DEBUG - Horários ocupados: {horarios_ocupados}")
@@ -69,18 +65,17 @@ class ControladorReserva:
     
     def cancelar_reserva(self, id_reserva: int, usuario_id: str) -> bool:
         reserva = obter_reserva_por_id(id_reserva)
-        # MUDANÇA: Verificando com os nomes de atributos corretos
+
         if reserva and reserva.id_usuario == str(usuario_id) and reserva.status_reserva == "ativa":
             return atualizar_status_reserva(id_reserva, "cancelada")
         return False
 
     def editar_reserva(self, id_reserva: int, usuario_id: str, nova_data: str, nova_hora: str) -> bool:
         reserva_atual = obter_reserva_por_id(id_reserva)
-        # MUDANÇA: Verificando com os nomes de atributos corretos
+
         if not (reserva_atual and str(reserva_atual.id_usuario) == str(usuario_id) and reserva_atual.status_reserva == "ativa"):
             return False
 
-        # MUDANÇA: Usando 'reserva_atual.id_maquina'
         if not self._horario_disponivel(reserva_atual.id_maquina, nova_data, nova_hora):
             return False 
         
