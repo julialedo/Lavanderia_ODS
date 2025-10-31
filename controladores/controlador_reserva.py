@@ -70,14 +70,14 @@ class ControladorReserva:
     def cancelar_reserva(self, id_reserva: int, usuario_id: str) -> bool:
         reserva = obter_reserva_por_id(id_reserva)
         # MUDANÇA: Verificando com os nomes de atributos corretos
-        if reserva and reserva.id_usuario == usuario_id and reserva.status_reserva == "ativa":
+        if reserva and reserva.id_usuario == str(usuario_id) and reserva.status_reserva == "ativa":
             return atualizar_status_reserva(id_reserva, "cancelada")
         return False
 
     def editar_reserva(self, id_reserva: int, usuario_id: str, nova_data: str, nova_hora: str) -> bool:
         reserva_atual = obter_reserva_por_id(id_reserva)
         # MUDANÇA: Verificando com os nomes de atributos corretos
-        if not (reserva_atual and reserva_atual.id_usuario == usuario_id and reserva_atual.status_reserva == "ativa"):
+        if not (reserva_atual and str(reserva_atual.id_usuario) == str(usuario_id) and reserva_atual.status_reserva == "ativa"):
             return False
 
         # MUDANÇA: Usando 'reserva_atual.id_maquina'
