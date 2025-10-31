@@ -16,14 +16,14 @@ def tela_morador():
     # 1. Obter o ID do usuário logado diretamente da sessão
     if "id_usuario" not in st.session_state or not st.session_state["logado"]:
         st.error("🔒 Sessão inválida. Por favor, faça o login novamente.")
-        st.session_state["pagina"] = "tela_login" # Força volta para login
+        st.session_state["pagina"] = "tela_login" 
         st.rerun()
-        return # Para a execução
+        return 
         
     usuario_id_logado = st.session_state["id_usuario"]
 
     st.sidebar.title("Menu")
-    # Mostrar nome do usuário logado
+
     if "nome" in st.session_state:
         st.sidebar.write(f"👤 Usuário: {st.session_state['nome']}")
     # Botão de logout
@@ -42,10 +42,8 @@ def tela_morador():
         col1, col2 = st.columns(2)
         
         with col1:
-            # Buscar máquinas reais do banco (substituindo os dados fictícios)
             maquinas = controlador_maquina.listar_por_lavanderia(1)  # Assumindo lavanderia ID 1
             if maquinas:
-                # Criar lista no formato antigo
                 opcoes_maquinas = []
                 for maquina in maquinas:
                     if maquina.status_maquina != "manutencao":
@@ -54,9 +52,9 @@ def tela_morador():
                 
                 maquina_selecionada = st.selectbox("Selecione a máquina:", opcoes_maquinas)
                 # Extrair ID da máquina da descrição selecionada
-                maquina_id = maquina_selecionada.split(" ")[1]  # Pega o número após "Máquina "
+                maquina_id = maquina_selecionada.split(" ")[1]  
             else:
-                # Fallback para dados fictícios se não houver máquinas
+
                 maquinas = ["Máquina 1 - Lavadora", "Máquina 2 - Secadora", "Máquina 3 - Lavadora"]
                 maquina_selecionada = st.selectbox("Selecione a máquina:", maquinas)
                 maquina_id = "1" if "1" in maquina_selecionada else "2"
@@ -73,7 +71,6 @@ def tela_morador():
             
             st.subheader(f"Horários disponíveis - {maquina_selecionada}")
             
-            # Mostrar horários em colunas (mantendo o formato original)
             if horarios_disponiveis:
                 cols = st.columns(4)
                 for i, horario in enumerate(horarios_disponiveis):
@@ -89,13 +86,10 @@ def tela_morador():
         with st.form("agendamento_form"):
             col1, col2 = st.columns(2)
             
-            # Inicializar a variável como None AQUI
             maquina_id_para_agendar = None
 
             with col1:
-                # Buscar máquinas reais
                 maquinas = controlador_maquina.listar_por_lavanderia(1)
-                # Renomeado para 'opcoes_maquinas_agendar' para evitar conflito com tab1
                 opcoes_maquinas_agendar = [] 
                 if maquinas:
                     for maquina in maquinas:
@@ -109,8 +103,7 @@ def tela_morador():
                         opcoes_maquinas_agendar,
                         key="agendamento_maquina"
                     )
-                    # --- CORREÇÃO 1 ---
-                    # Atribuir o ID à variável correta 'maquina_id_para_agendar'
+
                     maquina_id_para_agendar = maquina_selecionada_agendar.split(" ")[1]
                 else:
                     st.info("Nenhuma máquina disponível para agendamento.")
@@ -122,13 +115,9 @@ def tela_morador():
                 horarios = [f"{hora:02d}:00" for hora in range(8, 20)]
                 hora_agendamento = st.selectbox("Horário de início", horarios)
                 
-                # O campo de texto para ID foi removido
             
             if st.form_submit_button("📅 Fazer Agendamento"):
-                
-                # --- CORREÇÃO 2 ---
-                # A verificação agora funciona, pois 'maquina_id_para_agendar' 
-                # receberá o ID ou será None
+            
                 if maquina_id_para_agendar: 
                     # Usar controlador real para criar reserva
                     reserva = controlador_reserva.criar_reserva(
@@ -145,19 +134,14 @@ def tela_morador():
                     else:
                         st.error("❌ Erro ao fazer reserva. Horário indisponível ou dados inválidos.")
                 else:
-                    # --- CORREÇÃO 4 ---
-                    # Mudar a mensagem de erro para fazer sentido
-                    st.error("❌ Nenhuma máquina selecionada para o agendamento.")
-    # --- FIM DO BLOCO TAB2 ---
 
-    # --- BLOCO TAB3 MODIFICADO ---
+                    st.error("❌ Nenhuma máquina selecionada para o agendamento.")
+
     with tab3:
         st.subheader("📋 Minhas Reservas")
         
-        # --- MUDANÇA ADICIONADA ---
         hoje = datetime.now().date()
         
-        # 1. Obter TODAS as reservas do usuário (o controlador apenas busca por ID)
         reservas_todas = controlador_reserva.obter_reservas_por_usuario(usuario_id_logado)
         
         # 2. Filtrar a lista aqui na view
@@ -184,7 +168,7 @@ def tela_morador():
                 # Compara a data da reserva com a data de hoje
                 if data_reserva and data_reserva >= hoje:
                     reservas_validas.append(r)
-        # --- FIM DA MUDANÇA ---
+  
 
         # 3. Usar a nova lista filtrada 'reservas_validas'
         if reservas_validas:
