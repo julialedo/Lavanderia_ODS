@@ -150,19 +150,50 @@ def tela_morador():
                     st.error("❌ Nenhuma máquina selecionada para o agendamento.")
     # --- FIM DO BLOCO TAB2 ---
 
+    # --- BLOCO TAB3 MODIFICADO ---
     with tab3:
         st.subheader("📋 Minhas Reservas")
         
-        # O campo de texto para ID foi removido
+        # --- MUDANÇA ADICIONADA ---
+        hoje = datetime.now().date()
         
-        # --- CORREÇÃO ---
-        # Usar a variável correta: 'usuario_id_logado'
-        reservas = controlador_reserva.obter_reservas_por_usuario(usuario_id_logado)
-            
-        if reservas:
-            st.success(f"📋 Você tem {len(reservas)} reserva(s) ativa(s)")
+        # 1. Obter TODAS as reservas do usuário (o controlador apenas busca por ID)
+        reservas_todas = controlador_reserva.obter_reservas_por_usuario(usuario_id_logado)
+        
+        # 2. Filtrar a lista aqui na view
+        reservas_validas = []
+        if reservas_todas:
+            for r in reservas_todas:
+                # Condição 1: Status deve ser 'ativa'
+                if r.status_reserva != "ativa":
+                    continue
+
+                # Condição 2: A data não pode ter passado
+                data_reserva = None
+                if isinstance(r.data_reserva, str):
+                    try:
+                        # Converte a string da reserva para um objeto data
+                        data_reserva = datetime.strptime(r.data_reserva, "%Y-%m-%d").date()
+                    except ValueError:
+                        print(f"DEBUG: Data inválida na reserva {r.id_reserva}: {r.data_reserva}")
+                        continue # Pula data inválida
+                else:
+                    # Se já for um objeto 'date', apenas atribui
+                    data_reserva = r.data_reserva 
+
+                # Compara a data da reserva com a data de hoje
+                if data_reserva and data_reserva >= hoje:
+                    reservas_validas.append(r)
+        # --- FIM DA MUDANÇA ---
+
+        # 3. Usar a nova lista filtrada 'reservas_validas'
+        if reservas_validas:
+            # Texto da mensagem atualizado
+            st.success(f"📋 Você tem {len(reservas_validas)} reserva(s) ativa(s) (hoje ou no futuro)")
                     
-            for reserva in reservas:
+            # Iterar sobre a lista filtrada
+            for reserva in reservas_validas:
+                # O restante do código permanece idêntico
                 with st.expander(f"Reserva {reserva.id_reserva} - {reserva.data_reserva} às {reserva.hora_inicio}"):
                     col1, col2, col3 = st.columns([3, 1, 1])
                             
@@ -181,8 +212,6 @@ def tela_morador():
                     with col3:
                         # Botão Cancelar Reserva
                         if st.button("❌ Cancelar", key=f"cancel_{reserva.id_reserva}"):
-                            # --- CORREÇÃO ---
-                            # Usar a variável correta: 'usuario_id_logado'
                             if controlador_reserva.cancelar_reserva(reserva.id_reserva, usuario_id_logado):
                                 st.success("Reserva cancelada com sucesso!")
                                 st.rerun()
@@ -225,7 +254,7 @@ def tela_morador():
                                     maquina_id_edit = maquina_edit_selecionada.split(" ")[1]
                                 else:
                                     st.info("Nenhuma máquina disponível para edição.")
-                                    maquina_id_edit = reserva.id_maquina # Mantém o ID antigo se não houver opções
+                                    maquina_id_edit = str(reserva.id_maquina) # Mantém o ID antigo se não houver opções
                             
                             with col_edit2:
                                 # Converter a data da reserva para objeto date se necessário
@@ -241,17 +270,15 @@ def tela_morador():
                                 )
                                     
                                 # Horários disponíveis para a nova data
-                                # Usar o 'maquina_id_edit' que acabamos de definir
-                                horarios_disponiveis = controlador_reserva.visualizar_horarios_disponiveis(
-                                    maquina_id_edit, 
-                                    nova_data.strftime("%Y-%m-%d")
-                                )
+                                horarios_disponiveis = []
+                                if maquina_id_edit: 
+                                    horarios_disponiveis = controlador_reserva.visualizar_horarios_disponiveis(
+                                        maquina_id_edit, 
+                                        nova_data.strftime("%Y-%m-%d")
+                                    )
                                     
-                                # Encontrar o horário atual na lista
                                 hora_atual = reserva.hora_inicio
                                 
-                                # Adicionar o horário atual à lista se não for a mesma data/máquina
-                                # Para garantir que ele apareça como opção caso o usuário só mude a data
                                 if hora_atual not in horarios_disponiveis:
                                     horarios_disponiveis.insert(0, hora_atual)
 
@@ -262,7 +289,7 @@ def tela_morador():
                                     
                                 nova_hora = st.selectbox(
                                     "Novo Horário",
-                                    horarios_disponiveis, # Agora 'hora_atual' estará sempre na lista
+                                    horarios_disponiveis if horarios_disponiveis else [hora_atual], 
                                     index=index_hora,
                                     key=f"hora_edit_{reserva.id_reserva}"
                                 )
@@ -275,16 +302,12 @@ def tela_morador():
                                         st.error("❌ Erro: Nenhuma máquina selecionada para salvar.")
                                     else:
                                         try:
-                                            # Converter ambas as datas para string para comparar
                                             data_reserva_str = reserva.data_reserva.strftime("%Y-%m-%d") if hasattr(reserva.data_reserva, 'strftime') else str(reserva.data_reserva)
                                             data_mudou = nova_data.strftime("%Y-%m-%d") != data_reserva_str
                                             hora_mudou = nova_hora != reserva.hora_inicio
                                             maquina_mudou = maquina_id_edit != str(reserva.id_maquina)
                                             
                                             if data_mudou or hora_mudou or maquina_mudou:
-                                                # Para simplificar, vamos cancelar a reserva atual e criar uma nova
-                                                # --- CORREÇÃO ---
-                                                # Usar a variável correta: 'usuario_id_logado'
                                                 if controlador_reserva.cancelar_reserva(reserva.id_reserva, usuario_id_logado):
                                                     nova_reserva = controlador_reserva.criar_reserva(
                                                         maquina_id_edit,
@@ -299,8 +322,6 @@ def tela_morador():
                                                     else:
                                                         st.error("❌ Não foi possível criar a nova reserva. Horário pode estar ocupado.")
                                                         # Reverter o cancelamento em caso de erro
-                                                        # --- CORREÇÃO ---
-                                                        # Usar a variável correta: 'usuario_id_logado'
                                                         controlador_reserva.criar_reserva(
                                                             reserva.id_maquina,
                                                             usuario_id_logado,
@@ -320,5 +341,6 @@ def tela_morador():
                                     del st.session_state[f"editando_reserva_{reserva.id_reserva}"]
                                     st.rerun()
         else:
-            st.info("📭 Você não possui reservas ativas.")
+            # Texto da mensagem atualizado
+            st.info("📭 Você não possui reservas ativas futuras ou para hoje.")
 
