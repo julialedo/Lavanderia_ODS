@@ -16,18 +16,17 @@ def tela_adm_plataforma():
     st.title("🧺 Administração da Plataforma")
 
     st.sidebar.title("Menu")
-    # Mostrar nome do usuário logado
     if "usuario" in st.session_state:
         st.sidebar.write(f"👤 Usuário: {st.session_state['usuario']}")
-    # Botão de logout
     if st.sidebar.button("🚪 Sair"):
         st.session_state.clear()
         st.rerun()
 
     # Abas principais
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "🏢 Cadastrar Lavanderia",
         "👨‍💼 Cadastrar Administrador",
+        "👥 Cadastrar Morador",
         "📊 Estatísticas",
         "👤 Meu Perfil"
     ])
@@ -83,8 +82,37 @@ def tela_adm_plataforma():
                     st.error(f"❌ Erro ao cadastrar administrador: {str(e)}")
 
     # ------------------------------------------------------------------
-    # TAB 3 - Estatísticas da Plataforma
+    # TAB 3 - Cadastrar Morador
     with tab3:
+        st.subheader("👥 Cadastrar Novo Morador")
+        lavanderias = controlador_plataforma.listar_lavanderias()
+        lav_opts = {lav.nome: lav.id_lavanderia for lav in lavanderias}
+
+        with st.form("novo_morador"):
+            nome = st.text_input("Nome completo")
+            email = st.text_input("E-mail")
+            senha = st.text_input("Senha", type="password")
+            telefone = st.text_input("Telefone")
+            lav_sel = st.selectbox("Lavanderia", list(lav_opts.keys()) if lav_opts else [])
+            cadastrar = st.form_submit_button("Cadastrar Morador")
+
+            if cadastrar:
+                try:
+                    controlador_usuario.cadastrar_usuario(
+                        nome=nome,
+                        email=email,
+                        senha=senha,
+                        telefone=telefone,
+                        tipo_usuario="morador",
+                        id_lavanderia=lav_opts[lav_sel]
+                    )
+                    st.success(f"✅ Morador '{nome}' cadastrado com sucesso na lavanderia '{lav_sel}'!")
+                except Exception as e:
+                    st.error(f"❌ Erro ao cadastrar morador: {str(e)}")
+
+    # ------------------------------------------------------------------
+    # TAB 4 - Estatísticas da Plataforma
+    with tab4:
         st.subheader("📊 Estatísticas da Plataforma")
         try:
             stats = controlador_plataforma.obter_estatisticas()
@@ -97,16 +125,14 @@ def tela_adm_plataforma():
             st.error(f"❌ Erro ao carregar estatísticas: {str(e)}")
 
     # ------------------------------------------------------------------
-    # TAB 4 - Meu Perfil
-     # TAB 4 - Meu Perfil
-    with tab4:
+    # TAB 5 - Meu Perfil
+    with tab5:
         st.subheader("👤 Editar Informações do Perfil")
 
         usuario_logado = st.session_state.get("usuario_dados")
         if not usuario_logado:
             st.warning("⚠️ Não foi possível carregar suas informações. Faça login novamente.")
         else:
-            # --- Formulário de edição ---
             with st.form("form_editar_perfil_adm_plataforma"):
                 nome = st.text_input("Nome", value=usuario_logado["nome"])
                 email = st.text_input("Email", value=usuario_logado["email"])
@@ -134,4 +160,8 @@ def tela_adm_plataforma():
                             st.rerun()
                     except Exception as e:
                         st.error(f"❌ Erro: {str(e)}")
-           
+
+            st.markdown("---")
+            if st.button("⬅️ Voltar para a tela principal", use_container_width=True):
+                st.info("👈 Voltando para a tela inicial...")
+                st.rerun()
