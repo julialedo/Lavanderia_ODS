@@ -6,11 +6,13 @@ from datetime import datetime
 from controladores.controlador_reserva import ControladorReserva
 from controladores.controlador_maquina import ControladorMaquina
 from controladores.controlador_usuario import ControladorUsuario
+from controladores.controlador_ocorrencia import ControladorOcorrencia 
 
 # Inicialização dos controladores:
 controlador_reserva = ControladorReserva()
 controlador_maquina = ControladorMaquina()
 controlador_usuario = ControladorUsuario()
+controlador_ocorrencia = ControladorOcorrencia()
 
 
 # Tela inicial do Morador:
@@ -29,11 +31,12 @@ def tela_morador():
     st.title("👤 Área do Morador")
     st.markdown("---")
     
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📅 Visualizar Horários", 
         "⏰ Fazer Agendamento", 
         "📋 Minhas Reservas",
         "👤 Meu Perfil"
+        "⚠️ Reportar Ocorrência"
     ])
 
     # ------------------------------------------------------------------
@@ -369,3 +372,61 @@ def tela_morador():
                             st.rerun()
                     except Exception as e:
                         st.error(f"❌ Erro: {str(e)}")
+    # --- ABA DE OCORRÊNCIA ---
+    with tab4:
+        st.subheader("⚠️ Reportar uma Ocorrência")
+        st.write("Encontrou algo que não está funcionando? Nos avise.")
+
+        with st.form("form_reportar_ocorrencia", clear_on_submit=True):
+            
+            maquinas = controlador_maquina.listar_por_lavanderia(1)
+            
+            # --- MUDANÇA 1: Adicionar a opção "Nenhuma" como padrão ---
+            opcoes_maquinas_reporte = ["Nenhuma (Problema geral/Outro)"]
+            
+            if maquinas:
+                for maquina in maquinas:
+                    descricao = f"Máquina {maquina.id_maquina} - {maquina.tipo_maquina} ({maquina.status_maquina})"
+                    opcoes_maquinas_reporte.append(descricao)
+            
+            # O selectbox agora tem a opção "Nenhuma" e sempre existe
+            maquina_selecionada_reporte = st.selectbox(
+                "Qual máquina apresentou a ocorrência? (Opcional)",
+                opcoes_maquinas_reporte,
+                key="reporte_maquina"
+            )
+
+            descricao_ocorrencia = st.text_area(
+                "Descreva a ocorrência (ex: 'A máquina não está ligando', 'A secadora não está esquentando').",
+                height=150
+            )
+
+            enviado = st.form_submit_button("✉️ Enviar Reporte")
+
+            if enviado:
+                id_maquina_reporte = None # Começa como None
+                
+                # --- MUDANÇA 2: Lógica para definir o ID ou None ---
+                if maquina_selecionada_reporte != "Nenhuma (Problema geral/Outro)":
+                    try:
+                        id_maquina_reporte = maquina_selecionada_reporte.split(" ")[1]
+                    except Exception as e:
+                        print(f"Erro ao extrair ID da máquina para reporte: {e}")
+                        st.error("Erro ao selecionar a máquina.")
+                        return # Para a execução se o nome da máquina for inválido
+
+                # --- MUDANÇA 3: Simplificar validação ---
+                if not descricao_ocorrencia:
+                    st.warning("Por favor, descreva a ocorrência antes de enviar.")
+                else:
+                    # Chamar o controlador (id_maquina_reporte pode ser str ou None)
+                    nova_ocorrencia = controlador_ocorrencia.salvar_ocorrencia(
+                        id_maquina_reporte,
+                        descricao_ocorrencia,
+                        nome_usuario_logado # Usar o nome salvo na sessão
+                    )
+                    
+                    if nova_ocorrencia:
+                        st.success(f"✅ Ocorrência reportada com sucesso (ID: {nova_ocorrencia.id_problema}). Obrigado!")
+                    else:
+                        st.error("❌ Erro ao reportar a ocorrência. Tente novamente.")
