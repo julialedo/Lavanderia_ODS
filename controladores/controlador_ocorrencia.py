@@ -1,6 +1,9 @@
 # Controller - controlador_ocorrencia.py
 
-from modelos.ocorrencia import criar_ocorrencia
+from modelos.ocorrencia import (
+    criar_ocorrencia, 
+    listar_ocorrencias_db    
+)
 
 class ControladorOcorrencia:
     
@@ -20,3 +23,13 @@ class ControladorOcorrencia:
         except Exception as e:
             print(f"Erro no controlador ao salvar ocorrência: {e}")
             return None
+            
+    def listar_ocorrencias(self):
+        """
+        Busca todas as ocorrências do banco de dados.
+        """
+        try:
+            return listar_ocorrencias_db()
+        except Exception as e:
+            print(f"Erro no controlador ao listar ocorrências: {e}")
+            return []
