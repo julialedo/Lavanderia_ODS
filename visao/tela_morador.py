@@ -17,9 +17,12 @@ controlador_ocorrencia = ControladorOcorrencia()
 
 # Tela inicial do Morador:
 def tela_morador():
+    dados_usuario = st.session_state.get("usuario_dados")
+    usuario_id_logado = dados_usuario["id_usuario"]
+    nome_usuario_logado = dados_usuario["nome"]
 
     st.sidebar.title("Menu")
-    usuario_id_logado = st.session_state["usuario_dados"]["id_usuario"]
+  
     # Mostrar nome do usuário logado
     if "usuario" in st.session_state:
         st.sidebar.write(f"👤 Usuário: {st.session_state['usuario']}")
@@ -35,7 +38,7 @@ def tela_morador():
         "📅 Visualizar Horários", 
         "⏰ Fazer Agendamento", 
         "📋 Minhas Reservas",
-        "👤 Meu Perfil"
+        "👤 Meu Perfil",
         "⚠️ Reportar Ocorrência"
     ])
 
@@ -373,7 +376,7 @@ def tela_morador():
                     except Exception as e:
                         st.error(f"❌ Erro: {str(e)}")
     # --- ABA DE OCORRÊNCIA ---
-    with tab4:
+    with tab5:
         st.subheader("⚠️ Reportar uma Ocorrência")
         st.write("Encontrou algo que não está funcionando? Nos avise.")
 

@@ -15,7 +15,7 @@ class ControladorOcorrencia:
         
         # Chama a função do modelo para criar e salvar
         try:
-            nova_ocorrencia = modelo_ocorrencia.criar_ocorrencia(id_maquina, descricao, nome_usuario)
+            nova_ocorrencia = criar_ocorrencia(id_maquina=id_maquina, descricao=descricao, nome_usuario=nome_usuario)
             return nova_ocorrencia
         except Exception as e:
             print(f"Erro no controlador ao salvar ocorrência: {e}")
