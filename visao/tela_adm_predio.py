@@ -6,11 +6,13 @@ import matplotlib.pyplot as plt
 from controladores.controlador_maquina import ControladorMaquina
 from controladores.controlador_reserva import ControladorReserva
 from controladores.controlador_usuario import ControladorUsuario
+from controladores.controlador_ocorrencia import ControladorOcorrencia
 
 # Inicialização dos controladores:
 controlador_maquina = ControladorMaquina()
 controlador_reserva = ControladorReserva()
 controlador_usuario = ControladorUsuario()
+controlador_ocorrencia = ControladorOcorrencia()
 
 # Tela de Gerenciamento de Máquinas:
 def gerenciar_maquinas():
@@ -392,6 +394,73 @@ def abrir_relatorios():
             st.session_state.subpagina_adm_predio = None
             st.rerun()
 
+
+
+def visualizar_ocorrencias():
+    """Renderiza a página de gerenciamento de ocorrências."""
+    st.subheader("⚠️ Gerenciamento de Ocorrências")
+    st.markdown("---")
+
+    try:
+        # Busca todas as ocorrências
+        ocorrencias = controlador_ocorrencia.listar_ocorrencias()
+
+        if not ocorrencias:
+            st.info("🎉 Nenhuma ocorrência reportada. Tudo em ordem!")
+            st.markdown("---")
+        else:
+            # Separar em abertas e resolvidas
+            abertas = [oc for oc in ocorrencias ]
+            
+
+            # --- Seção de Ocorrências Abertas ---
+            st.markdown("### 🔔 Ocorrências Abertas")
+            if not abertas:
+                st.success("✅ Nenhuma ocorrência aberta no momento.")
+            else:
+                st.error(f"Você tem {len(abertas)} ocorrência(s) ")
+                for oc in abertas:
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        with st.expander(f"ID #{oc.id_problema} - Data: {oc.data_problema} (Status: {oc.status_problema})"):
+                            st.write(f"**Reportado por:** {oc.nome_usuario}")
+                            st.write(f"**Máquina:** {oc.id_maquina if oc.id_maquina else 'N/A'}")
+                            st.write(f"**Descrição:**")
+                            st.warning(f"_{oc.descricao}_")
+                    
+                    
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar ocorrências: {e}")
+
+    st.markdown("---")
+    if st.button("⬅️ Voltar ao Menu Principal"):
+        st.session_state.subpagina_adm_predio = None
+        st.rerun()
+
+
+# Função para carregar dados do usuário
+def carregar_dados_usuario():
+    """Carrega os dados do usuário logado na session_state se não existirem"""
+    if "usuario_dados" not in st.session_state and "id_usuario" in st.session_state:
+        try:
+            usuario_dados = controlador_usuario.obter_usuario_por_id(st.session_state["id_usuario"])
+            if usuario_dados:
+                st.session_state["usuario_dados"] = {
+                    "id_usuario": usuario_dados.id_usuario,
+                    "nome": usuario_dados.nome,
+                    "email": usuario_dados.email,
+                    "telefone": usuario_dados.telefone
+                }
+        except Exception as e:
+            st.error(f"❌ Erro ao carregar dados do usuário: {str(e)}")
+
+
+
+
+
+
+
+
 # Função para carregar dados do usuário
 def carregar_dados_usuario():
     """Carrega os dados do usuário logado na session_state se não existirem"""
@@ -523,12 +592,15 @@ def tela_adm_predio():
     elif st.session_state.get("subpagina_adm_predio") == "abrir_relatorios":
         abrir_relatorios()
         return  # IMPORTANTE: return para não mostrar o resto
+    elif st.session_state.get("subpagina_adm_predio") == "visualizar_ocorrencias":
+        visualizar_ocorrencias()
+        return # IMPORTANTE    
     elif st.session_state.get("subpagina_adm_predio") == "editar_perfil":
         editar_perfil()
         return  # IMPORTANTE: return para não mostrar o resto
     
     # --- NOVAS ABAS PRINCIPAIS ---
-    tab1, tab2, tab3 = st.tabs(["⚙️ Gerenciar Máquinas", "📊 Relatórios", "👤 Meu Perfil"])
+    tab1, tab2, tab3, tab4 = st.tabs(["⚙️ Gerenciar Máquinas", "📊 Relatórios",  "⚠️ Ocorrências", "👤 Meu Perfil"])
     
     with tab1:
         st.subheader("⚙️ Gerenciar Máquinas")
@@ -543,8 +615,14 @@ def tela_adm_predio():
         if st.button("Abrir Relatórios", use_container_width=True, key="btn_relatorios"):
             st.session_state["subpagina_adm_predio"] = "abrir_relatorios"
             st.rerun()
-    
     with tab3:
+        st.subheader("⚠️ Ocorrências")
+        st.write("Revise e gerencie os problemas reportados pelos moradores.")
+        if st.button("Revisar Ocorrências", use_container_width=True, key="btn_ocorrencias"):
+            st.session_state["subpagina_adm_predio"] = "visualizar_ocorrencias"
+            st.rerun()
+    
+    with tab4:
         st.subheader("👤 Meu Perfil")
         st.write("Gerencie suas informações pessoais e senha.")
         

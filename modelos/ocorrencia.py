@@ -11,7 +11,26 @@ class ProblemaReportado(BaseModel):
     descricao: str
     data_problema: date
     nome_usuario: str
-    
+
+def listar_ocorrencias_db() -> list[ProblemaReportado]:
+    """Busca todas as ocorrências do banco, ordenadas pela mais recente."""
+    ocorrencias = []
+    try:
+        with conectar() as conexao:
+            with conexao.cursor(dictionary=True) as cursor:
+                # Ordena por ID decrescente para ver as mais novas primeiro
+                sql = "SELECT * FROM problemas_reportados ORDER BY id_problema DESC"
+                cursor.execute(sql)
+                resultados = cursor.fetchall()
+                
+                if resultados:
+                    for res in resultados:
+                        # Converte o resultado do BD para o objeto Pydantic
+                        ocorrencias.append(ProblemaReportado(**res))
+        return ocorrencias
+    except Exception as e:
+        print(f"Erro ao listar ocorrências no banco: {e}")
+        return [] # Retorna lista vazia em caso de erro    
 
 def _obter_proximo_id() -> int:
     """Busca o maior ID existente e retorna o próximo."""
