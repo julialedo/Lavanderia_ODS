@@ -36,8 +36,8 @@ def reportar_problema_db(problema: ProblemaReportado) -> bool:
                 # Usando o nome da tabela e colunas corretos
                 sql = """
                 INSERT INTO problemas_reportados 
-                (id_problema, id_maquina, descricao, data_problema, nome_usuario, status_problema)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                (id_problema, id_maquina, descricao, data_problema, nome_usuario)
+                VALUES (%s, %s, %s, %s, %s)
                 """
                 cursor.execute(sql, (
                     problema.id_problema,
@@ -67,7 +67,6 @@ def criar_ocorrencia(id_maquina: str, descricao: str, nome_usuario: str) -> Prob
         descricao=descricao,
         data_problema=date.today(),
         nome_usuario=nome_usuario,
-        status_problema="aberto" # Status padrão
     )
     
     if reportar_problema_db(novo_problema):
