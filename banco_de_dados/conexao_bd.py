@@ -6,10 +6,10 @@ from mysql.connector import Error
 def conectar():
     try:
         conexao = mysql.connector.connect(  #estabelecendo a conexão, passando os dados do banco de dados online
-            host='maglev.proxy.rlwy.net', 
-            port='26076',
+            host='switchyard.proxy.rlwy.net', 
+            port='17609',
             user='root',
-            password='tolRZxoWcJVgPkBDtOHkzrSqfkQkKSja',
+            password='beLhPoPmcJbyvMtsfZKroBaWDynJCCDG',
             database='railway'
         )
         if conexao.is_connected():

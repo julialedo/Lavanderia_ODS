@@ -708,4 +708,3 @@ def tela_adm_predio():
             st.session_state["subpagina_adm_predio"] = "editar_perfil"
             st.rerun()
 
-tela_adm_predio()
