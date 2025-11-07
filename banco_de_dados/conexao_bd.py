@@ -7,7 +7,7 @@ def conectar():
     try:
         conexao = mysql.connector.connect(  #estabelecendo a conexão, passando os dados do banco de dados online
             host='REMOVIDO', 
-            port='26076',
+            port='17609',
             user='root',
             password='REMOVIDO',
             database='railway'
