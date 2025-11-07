@@ -1,62 +1,161 @@
 # Controller - controlador_usuario.py
 # Responsável pelas validações, transformar dados para o model, decisões.
-# Não faz acesso direto ao banco, chama funções do Model. Retorna resultados para a View.
-# Aqui entra as regras de negócio do tipo "regra de validação" que controla o fluxo da aplicação (ex: verificar se todos os campos obrigatórios foram preenchidos pelo usuario).
 
-from typing import Optional
-from modelos.usuario import autenticar_usuario, editar_usuario
-
+from typing import Optional, Tuple
+from modelos.usuario import (
+    autenticar_usuario, editar_usuario, criar_morador, 
+    verificar_email_existente, listar_moradores_pendentes_por_lavanderia,
+    aprovar_conta_morador, rejeitar_conta_morador, criar_administrador_predio,
+    contar_usuarios
+)
+import re
 
 class ControladorUsuario:
     
-    # Autenticar Login:
-    def login(self, email: str, senha: str):
-        # ... código do login ...
+    # AUTENTICAR LOGIN
+    def login(self, email: str, senha: str) -> dict:
+        """Autentica usuário no sistema"""
         if not email or not senha:  
             raise ValueError("Email e senha são obrigatórios!")   
 
-        usuario = autenticar_usuario(email, senha) #chama autenticação no model
+        usuario = autenticar_usuario(email, senha)
 
         if not usuario:    
             raise ValueError("Usuário não encontrado! Verifique o e-mail e a senha.")
-        if usuario["status_conta"] !=   "ativa":   
+        if usuario["status_conta"] != "ativa":   
             raise ValueError("Conta inativa. Contate o administrador.")
         
-        return usuario  #retorna o usuario 
+        return usuario
 
-    # Editar Perfil:
-    def editar_perfil(self, id_usuario: int, nome: str, email: str, telefone: str, senha_atual: str, nova_senha: Optional[str] = None):
-        
+    # EDITAR PERFIL
+    def editar_perfil(self, id_usuario: int, nome: str, email: str, telefone: str, 
+                     senha_atual: str, nova_senha: Optional[str] = None) -> bool:
+        """Edita perfil do usuário"""
         # 1. Validação dos campos obrigatórios
         if not all([id_usuario, nome, email, telefone, senha_atual]):
             raise ValueError("Todos os campos obrigatórios (Nome, Email, Telefone, Senha Atual) devem ser preenchidos!")
 
         # 2. Re-autenticação/Validação da Senha Atual
-        usuario_db = autenticar_usuario(email, senha_atual) # Tenta autenticar com o email e a senha atual
+        usuario_db = autenticar_usuario(email, senha_atual)
         
         if not usuario_db or usuario_db["id_usuario"] != id_usuario: 
-            # Verifica se a autenticação falhou ou se o ID retornado não é o do usuário logado (segurança extra)
             raise ValueError("Senha atual incorreta ou usuário não encontrado.")
-            
+             
         # 3. Validação de Nova Senha (se fornecida)
-        if nova_senha and len(nova_senha) < 6: # Exemplo simples de validação de senha
+        if nova_senha and len(nova_senha) < 6:
              raise ValueError("A nova senha deve ter pelo menos 6 caracteres.")
              
         # 4. Chama o Model para atualizar
-        # Nota: O Model (editar_usuario) deve cuidar de não atualizar o email 
-        # para um email já existente, se for uma regra de negócio, ou isso 
-        # deve ser checado aqui. Para este exemplo, vamos assumir que o Model 
-        # lida com a atualização simples e você pode adicionar a checagem de 
-        # e-mail duplicado posteriormente no Model se necessário.
-        
         ok = editar_usuario(id_usuario, nome, email, telefone, nova_senha)
         
         if not ok:
-            # Pode indicar que não houve alteração ou um erro no banco (menos provável se não for um erro de Exception)
             raise Exception("Não foi possível atualizar as informações. Verifique os dados.")
             
-        # Se a atualização for bem-sucedida e a senha foi alterada, é recomendado 
-        # forçar o logout ou solicitar novo login por segurança. 
-        # Para simplificar, neste exemplo, apenas retornaremos o sucesso.
-        
-        return True # Indica sucesso na edição
+        return True
+
+    # CADASTRAR MORADOR
+    def cadastrar_morador(self, nome: str, email: str, senha: str, telefone: str, 
+                         id_lavanderia: int) -> Tuple[bool, str]:
+        """Cadastra novo morador (status inativa)"""
+        try:
+            # 1. Validações básicas
+            if not all([nome, email, senha, telefone]):
+                raise ValueError("Todos os campos são obrigatórios!")
+            
+            # 2. Validação de email
+            if not self.validar_email(email):
+                raise ValueError("Email inválido!")
+            
+            # 3. Validação de senha
+            if len(senha) < 6:
+                raise ValueError("A senha deve ter pelo menos 6 caracteres")
+            
+            # 4. Verificar se email já existe
+            if verificar_email_existente(email):
+                raise ValueError("Email já cadastrado no sistema")
+            
+            # 5. Criar morador (status 'inativa')
+            novo_id = criar_morador(nome, email, senha, telefone, id_lavanderia)
+            
+            return True, f"Cadastro realizado com sucesso! ID: {novo_id}. Aguarde aprovação do administrador."
+            
+        except Exception as e:
+            return False, str(e)
+
+    # CRIAR ADMINISTRADOR DO PRÉDIO
+    def criar_administrador_predio(self, nome: str, email: str, senha: str, 
+                                  telefone: str, id_lavanderia: int) -> Tuple[bool, str]:
+        """Cria novo administrador do prédio"""
+        try:
+            if not all([nome, email, senha, telefone]):
+                raise ValueError("Todos os campos são obrigatórios!")
+            
+            if not self.validar_email(email):
+                raise ValueError("Email inválido!")
+            
+            if len(senha) < 6:
+                raise ValueError("A senha deve ter pelo menos 6 caracteres")
+            
+            if verificar_email_existente(email):
+                raise ValueError("Email já cadastrado no sistema")
+            
+            novo_id = criar_administrador_predio(nome, email, senha, telefone, id_lavanderia)
+            
+            return True, f"Administrador criado com sucesso! ID: {novo_id}"
+            
+        except Exception as e:
+            return False, str(e)
+
+    # LISTAR MORADORES PENDENTES
+    def listar_moradores_pendentes(self, id_lavanderia: int) -> list:
+        """Lista moradores aguardando aprovação"""
+        try:
+            return listar_moradores_pendentes_por_lavanderia(id_lavanderia)
+        except Exception as e:
+            raise ValueError(f"Erro ao listar moradores pendentes: {str(e)}")
+
+    # APROVAR MORADOR
+    def aprovar_morador(self, id_usuario: int) -> bool:
+        """Aprova conta de morador"""
+        try:
+            sucesso = aprovar_conta_morador(id_usuario)
+            if not sucesso:
+                raise ValueError("Morador não encontrado ou já aprovado")
+            return True
+        except Exception as e:
+            raise ValueError(f"Erro ao aprovar morador: {str(e)}")
+
+    # REJEITAR MORADOR
+    def rejeitar_morador(self, id_usuario: int) -> bool:
+        """Rejeita conta de morador"""
+        try:
+            sucesso = rejeitar_conta_morador(id_usuario)
+            if not sucesso:
+                raise ValueError("Morador não encontrado")
+            return True
+        except Exception as e:
+            raise ValueError(f"Erro ao rejeitar morador: {str(e)}")
+
+    # CONTAR USUÁRIOS
+    def contar_usuarios(self) -> int:
+        """Retorna o total de usuários no sistema"""
+        try:
+            return contar_usuarios()
+        except Exception as e:
+            raise ValueError(f"Erro ao contar usuários: {str(e)}")
+
+    # VALIDAÇÃO DE EMAIL
+    def validar_email(self, email: str) -> bool:
+        """Valida formato de email"""
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return re.match(pattern, email) is not None
+
+    # BUSCAR USUÁRIO POR EMAIL
+    def buscar_usuario_por_email(self, email: str) -> Optional[dict]:
+        """Busca usuário por email"""
+        try:
+            # Esta função precisaria ser implementada no modelo
+            # Por enquanto retornamos None
+            return None
+        except Exception as e:
+            raise ValueError(f"Erro ao buscar usuário: {str(e)}")
