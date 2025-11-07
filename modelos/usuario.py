@@ -86,3 +86,110 @@ def contar_usuarios() -> int:
         return qtd_usuarios    #retorna o total de usuarios
     finally:
         conn.close()
+
+def criar_morador(nome: str, email: str, senha: str, telefone: str, id_lavanderia: int):
+    
+    sql = """INSERT INTO usuario 
+             (nome, email, senha, telefone, tipo_usuario, status_conta, id_lavanderia) 
+             VALUES (%s, %s, %s, %s, 'morador', 'inativa', %s)"""
+    
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (nome, email, senha, telefone, id_lavanderia))
+        conn.commit()
+        new_id = cur.lastrowid
+        cur.close()
+        return new_id
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
+# Verificar se email já existe (mantém igual)
+def verificar_email_existente(email: str) -> bool:
+    sql = "SELECT COUNT(*) FROM usuario WHERE email = %s"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (email,))
+        count = cur.fetchone()[0]
+        cur.close()
+        return count > 0
+    finally:
+        conn.close()
+
+# Aprovar conta de morador (para admin)
+def aprovar_conta_morador(id_usuario: int):
+    sql = "UPDATE usuario SET status_conta = 'ativa' WHERE id_usuario = %s AND tipo_usuario = 'morador'"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_usuario,))
+        conn.commit()
+        rows_affected = cur.rowcount
+        cur.close()
+        return rows_affected > 0
+    finally:
+        conn.close()
+
+# Listar moradores pendentes (para admin)
+def listar_moradores_pendentes(id_lavanderia: int):
+    sql = """SELECT id_usuario, nome, email, telefone, data_cadastro_usuario 
+             FROM usuario 
+             WHERE tipo_usuario = 'morador' AND status_conta = 'inativa' AND id_lavanderia = %s"""
+    
+    conn = conectar()
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(sql, (id_lavanderia,))
+        moradores = cur.fetchall()
+        cur.close()
+        return moradores
+    finally:
+        conn.close()
+
+# Listar moradores pendentes por lavanderia
+def listar_moradores_pendentes_por_lavanderia(id_lavanderia: int):
+    sql = """SELECT id_usuario, nome, email, telefone, data_cadastro_usuario 
+             FROM usuario 
+             WHERE tipo_usuario = 'morador' AND status_conta = 'inativa' AND id_lavanderia = %s"""
+    
+    conn = conectar()
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(sql, (id_lavanderia,))
+        moradores = cur.fetchall()
+        cur.close()
+        return moradores
+    finally:
+        conn.close()
+
+# Aprovar conta de morador
+def aprovar_conta_morador(id_usuario: int):
+    sql = "UPDATE usuario SET status_conta = 'ativa' WHERE id_usuario = %s AND tipo_usuario = 'morador'"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_usuario,))
+        conn.commit()
+        rows_affected = cur.rowcount
+        cur.close()
+        return rows_affected > 0
+    finally:
+        conn.close()
+
+# Rejeitar conta de morador (excluir ou manter como inativa)
+def rejeitar_conta_morador(id_usuario: int):
+    sql = "DELETE FROM usuario WHERE id_usuario = %s AND tipo_usuario = 'morador' AND status_conta = 'inativa'"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_usuario,))
+        conn.commit()
+        rows_affected = cur.rowcount
+        cur.close()
+        return rows_affected > 0
+    finally:
+        conn.close()
