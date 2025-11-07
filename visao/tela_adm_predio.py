@@ -14,6 +14,78 @@ controlador_reserva = ControladorReserva()
 controlador_usuario = ControladorUsuario()
 controlador_ocorrencia = ControladorOcorrencia()
 
+# Tela de Aprovação de Moradores:
+def aprovar_moradores():
+    st.subheader("👥 Aprovar Moradores Cadastrados")
+    st.markdown("---")
+    
+    # Obter ID da lavanderia do admin logado
+    id_lavanderia_admin = st.session_state.get("id_lavanderia")
+    if not id_lavanderia_admin:
+        st.error("❌ ID da lavanderia não encontrado.")
+        return
+    
+    st.info("Aqui você pode aprovar ou rejeitar cadastros de novos moradores.")
+    
+    # Buscar moradores pendentes
+    try:
+        moradores_pendentes = controlador_usuario.listar_moradores_pendentes(id_lavanderia_admin)
+        
+        if not moradores_pendentes:
+            st.success("🎉 Não há moradores aguardando aprovação!")
+            
+            # Botão para atualizar lista
+            if st.button("🔄 Atualizar Lista", key="atualizar_lista_moradores"):
+                st.rerun()
+        else:
+            st.warning(f"📋 {len(moradores_pendentes)} morador(es) aguardando aprovação")
+            
+            # Exibir em formato de cards
+            for i, morador in enumerate(moradores_pendentes):
+                with st.container():
+                    col1, col2 = st.columns([3, 1])
+                    
+                    with col1:
+                        st.markdown(f"### 👤 {morador['nome']}")
+                        st.write(f"**📧 Email:** {morador['email']}")
+                        st.write(f"**📞 Telefone:** {morador['telefone']}")
+                        st.write(f"**📅 Data do Cadastro:** {morador['data_cadastro_usuario']}")
+                    
+                    with col2:
+                        st.markdown("### Ações")
+                        col_aprovar, col_rejeitar = st.columns(2)
+                        
+                        with col_aprovar:
+                            if st.button("✅ Aprovar", key=f"aprovar_{morador['id_usuario']}", 
+                                       use_container_width=True, type="primary"):
+                                try:
+                                    if controlador_usuario.aprovar_morador(morador['id_usuario']):
+                                        st.success(f"🎉 Morador **{morador['nome']}** aprovado com sucesso!")
+                                        st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ Erro: {str(e)}")
+                        
+                        with col_rejeitar:
+                            if st.button("❌ Rejeitar", key=f"rejeitar_{morador['id_usuario']}", 
+                                       use_container_width=True, type="secondary"):
+                                try:
+                                    if controlador_usuario.rejeitar_morador(morador['id_usuario']):
+                                        st.success(f"🗑️ Morador **{morador['nome']}** rejeitado")
+                                        st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ Erro: {str(e)}")
+                    
+                    if i < len(moradores_pendentes) - 1:
+                        st.markdown("---")
+            
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar moradores pendentes: {str(e)}")
+    
+    st.markdown("---")
+    if st.button("⬅️ Voltar ao Menu Principal"):
+        st.session_state.subpagina_adm_predio = None
+        st.rerun()
+
 # Tela de Gerenciamento de Máquinas:
 def gerenciar_maquinas():
     st.subheader("⚙️ Gerenciamento de Máquinas")
@@ -394,8 +466,6 @@ def abrir_relatorios():
             st.session_state.subpagina_adm_predio = None
             st.rerun()
 
-
-
 def visualizar_ocorrencias():
     """Renderiza a página de gerenciamento de ocorrências."""
     st.subheader("⚠️ Gerenciamento de Ocorrências")
@@ -436,30 +506,6 @@ def visualizar_ocorrencias():
     if st.button("⬅️ Voltar ao Menu Principal"):
         st.session_state.subpagina_adm_predio = None
         st.rerun()
-
-
-# Função para carregar dados do usuário
-def carregar_dados_usuario():
-    """Carrega os dados do usuário logado na session_state se não existirem"""
-    if "usuario_dados" not in st.session_state and "id_usuario" in st.session_state:
-        try:
-            usuario_dados = controlador_usuario.obter_usuario_por_id(st.session_state["id_usuario"])
-            if usuario_dados:
-                st.session_state["usuario_dados"] = {
-                    "id_usuario": usuario_dados.id_usuario,
-                    "nome": usuario_dados.nome,
-                    "email": usuario_dados.email,
-                    "telefone": usuario_dados.telefone
-                }
-        except Exception as e:
-            st.error(f"❌ Erro ao carregar dados do usuário: {str(e)}")
-
-
-
-
-
-
-
 
 # Função para carregar dados do usuário
 def carregar_dados_usuario():
@@ -586,43 +632,64 @@ def tela_adm_predio():
     
     # ----------------------------------------------------
     # VERIFICAÇÃO PRINCIPAL DA SUBPÁGINA - DEVE VIR ANTES DOS BOTÕES
-    if st.session_state.get("subpagina_adm_predio") == "gerenciar_maquinas":
+    if st.session_state.get("subpagina_adm_predio") == "aprovar_moradores":
+        aprovar_moradores()
+        return
+    elif st.session_state.get("subpagina_adm_predio") == "gerenciar_maquinas":
         gerenciar_maquinas()
-        return  # IMPORTANTE: return para não mostrar o resto
+        return
     elif st.session_state.get("subpagina_adm_predio") == "abrir_relatorios":
         abrir_relatorios()
-        return  # IMPORTANTE: return para não mostrar o resto
+        return
     elif st.session_state.get("subpagina_adm_predio") == "visualizar_ocorrencias":
         visualizar_ocorrencias()
-        return # IMPORTANTE    
+        return
     elif st.session_state.get("subpagina_adm_predio") == "editar_perfil":
         editar_perfil()
-        return  # IMPORTANTE: return para não mostrar o resto
+        return
     
     # --- NOVAS ABAS PRINCIPAIS ---
-    tab1, tab2, tab3, tab4 = st.tabs(["⚙️ Gerenciar Máquinas", "📊 Relatórios",  "⚠️ Ocorrências", "👤 Meu Perfil"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["👥 Aprovar Moradores", "⚙️ Gerenciar Máquinas", "📊 Relatórios", "⚠️ Ocorrências", "👤 Meu Perfil"])
     
     with tab1:
+        st.subheader("👥 Aprovar Moradores")
+        st.write("Aprove ou rejeite cadastros de novos moradores na sua lavanderia.")
+        
+        # Estatística rápida
+        try:
+            id_lavanderia = st.session_state.get("id_lavanderia")
+            if id_lavanderia:
+                moradores_pendentes = controlador_usuario.listar_moradores_pendentes(id_lavanderia)
+                st.info(f"**📊 Estatística:** {len(moradores_pendentes)} morador(es) aguardando aprovação")
+        except:
+            pass
+            
+        if st.button("Abrir Aprovações", use_container_width=True, key="btn_aprovar"):
+            st.session_state["subpagina_adm_predio"] = "aprovar_moradores"
+            st.rerun()
+    
+    with tab2:
         st.subheader("⚙️ Gerenciar Máquinas")
         st.write("Cadastre, edite ou remova máquinas da sua lavanderia.")
         if st.button("Abrir Gerenciamento", use_container_width=True, key="btn_maquinas"):
             st.session_state["subpagina_adm_predio"] = "gerenciar_maquinas"
             st.rerun()
     
-    with tab2:
+    with tab3:
         st.subheader("📊 Relatórios")
         st.write("Acompanhe o uso e desempenho da sua lavanderia.")
         if st.button("Abrir Relatórios", use_container_width=True, key="btn_relatorios"):
             st.session_state["subpagina_adm_predio"] = "abrir_relatorios"
             st.rerun()
-    with tab3:
+    
+    with tab4:
         st.subheader("⚠️ Ocorrências")
         st.write("Revise e gerencie os problemas reportados pelos moradores.")
         if st.button("Revisar Ocorrências", use_container_width=True, key="btn_ocorrencias"):
             st.session_state["subpagina_adm_predio"] = "visualizar_ocorrencias"
             st.rerun()
     
-    with tab4:
+    with tab5:
         st.subheader("👤 Meu Perfil")
         st.write("Gerencie suas informações pessoais e senha.")
         
