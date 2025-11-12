@@ -470,17 +470,25 @@ def visualizar_ocorrencias():
     """Renderiza a página de gerenciamento de ocorrências."""
     st.subheader("⚠️ Gerenciamento de Ocorrências")
     st.markdown("---")
+    id_lavanderia_admin = st.session_state.get("id_lavanderia")
+    if not id_lavanderia_admin:
+        st.error("❌ ID da lavanderia do admin não encontrado na sessão.")
+        st.markdown("---")
+        if st.button("⬅️ Voltar ao Menu Principal"):
+             st.session_state.subpagina_adm_predio = None
+             st.rerun()
+        return # Para a execução
 
     try:
         # Busca todas as ocorrências
-        ocorrencias = controlador_ocorrencia.listar_ocorrencias()
+        ocorrencias = controlador_ocorrencia.listar_ocorrencias_para_admin(id_lavanderia_admin)
 
         if not ocorrencias:
             st.info("🎉 Nenhuma ocorrência reportada. Tudo em ordem!")
             st.markdown("---")
         else:
             # Separar em abertas e resolvidas
-            abertas = [oc for oc in ocorrencias ]
+            abertas = ocorrencias
             
 
             # --- Seção de Ocorrências Abertas ---
@@ -492,7 +500,7 @@ def visualizar_ocorrencias():
                 for oc in abertas:
                     col1, col2 = st.columns([4, 1])
                     with col1:
-                        with st.expander(f"ID #{oc.id_problema} - Data: {oc.data_problema} (Status: {oc.status_problema})"):
+                        with st.expander(f"ID #{oc.id_problema} - Data: {oc.data_problema}"):
                             st.write(f"**Reportado por:** {oc.nome_usuario}")
                             st.write(f"**Máquina:** {oc.id_maquina if oc.id_maquina else 'N/A'}")
                             st.write(f"**Descrição:**")
