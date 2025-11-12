@@ -20,7 +20,7 @@ def tela_morador():
     dados_usuario = st.session_state.get("usuario_dados")
     usuario_id_logado = dados_usuario["id_usuario"]
     nome_usuario_logado = dados_usuario["nome"]
-
+    id_lavanderia_logada = st.session_state.get("id_lavanderia")
     st.sidebar.title("Menu")
   
     # Mostrar nome do usuário logado
@@ -382,7 +382,7 @@ def tela_morador():
 
         with st.form("form_reportar_ocorrencia", clear_on_submit=True):
             
-            maquinas = controlador_maquina.listar_por_lavanderia(1)
+            maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia_logada)
             
             # --- MUDANÇA 1: Adicionar a opção "Nenhuma" como padrão ---
             opcoes_maquinas_reporte = ["Nenhuma (Problema geral/Outro)"]
@@ -426,7 +426,8 @@ def tela_morador():
                     nova_ocorrencia = controlador_ocorrencia.salvar_ocorrencia(
                         id_maquina_reporte,
                         descricao_ocorrencia,
-                        nome_usuario_logado # Usar o nome salvo na sessão
+                        nome_usuario_logado,
+                        id_lavanderia_logada # Usar o nome salvo na sessão
                     )
                     
                     if nova_ocorrencia:

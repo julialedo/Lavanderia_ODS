@@ -11,6 +11,7 @@ class ProblemaReportado(BaseModel):
     descricao: str
     data_problema: date
     nome_usuario: str
+    id_lavanderia: int
 
 def listar_ocorrencias_db() -> list[ProblemaReportado]:
     """Busca todas as ocorrências do banco, ordenadas pela mais recente."""
@@ -31,6 +32,35 @@ def listar_ocorrencias_db() -> list[ProblemaReportado]:
     except Exception as e:
         print(f"Erro ao listar ocorrências no banco: {e}")
         return [] # Retorna lista vazia em caso de erro    
+
+
+
+def listar_ocorrencias_por_lavanderia_db(id_lavanderia: int) -> list[ProblemaReportado]:
+    """Busca ocorrências de UMA lavanderia específica."""
+    ocorrencias = []
+    try:
+        with conectar() as conexao:
+            with conexao.cursor(dictionary=True) as cursor:
+                sql = """
+                    SELECT * FROM problemas_reportados 
+                    WHERE id_lavanderia = %s 
+                    ORDER BY id_problema DESC
+                """
+                cursor.execute(sql, (id_lavanderia,)) # Passa o ID como parâmetro
+                
+                resultados = cursor.fetchall()
+                
+                if resultados:
+                    for res in resultados:
+                        ocorrencias.append(ProblemaReportado(**res))
+            return ocorrencias
+    except Exception as e:
+        print(f"Erro ao listar ocorrências por lavanderia: {e}")
+        return [] # Retorna lista vazia em caso de erro
+
+
+
+
 
 def _obter_proximo_id() -> int:
     """Busca o maior ID existente e retorna o próximo."""
@@ -55,8 +85,8 @@ def reportar_problema_db(problema: ProblemaReportado) -> bool:
                 # Usando o nome da tabela e colunas corretos
                 sql = """
                 INSERT INTO problemas_reportados 
-                (id_problema, id_maquina, descricao, data_problema, nome_usuario)
-                VALUES (%s, %s, %s, %s, %s)
+                (id_problema, id_maquina, descricao, data_problema, nome_usuario, id_lavanderia)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 """
                 cursor.execute(sql, (
                     problema.id_problema,
@@ -64,6 +94,7 @@ def reportar_problema_db(problema: ProblemaReportado) -> bool:
                     problema.descricao,
                     problema.data_problema,
                     problema.nome_usuario,
+                    problema.id_lavanderia,
                 ))
                 conexao.commit()
                 return True
@@ -72,7 +103,7 @@ def reportar_problema_db(problema: ProblemaReportado) -> bool:
         return False
 
 # Esta função é chamada pelo 'ControladorOcorrencia'
-def criar_ocorrencia(id_maquina: str, descricao: str, nome_usuario: str) -> ProblemaReportado | None:
+def criar_ocorrencia(id_maquina: str, descricao: str, nome_usuario: str, id_lavanderia: int) -> ProblemaReportado | None:
     """Cria e salva um novo objeto ProblemaReportado."""
     
     proximo_id = _obter_proximo_id()
@@ -86,6 +117,7 @@ def criar_ocorrencia(id_maquina: str, descricao: str, nome_usuario: str) -> Prob
         descricao=descricao,
         data_problema=date.today(),
         nome_usuario=nome_usuario,
+        id_lavanderia=id_lavanderia,
     )
     
     if reportar_problema_db(novo_problema):
