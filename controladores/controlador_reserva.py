@@ -10,7 +10,7 @@ from modelos.reserva import (
     obter_reserva_por_id,
     atualizar_status_reserva,
     atualizar_data_hora_reserva,
-    contar_total_reservas
+    obter_maior_id_reserva
 )
 
 class ControladorReserva:
@@ -23,8 +23,9 @@ class ControladorReserva:
         return f"{hora_fim:02d}:00"
 
     def obter_proximo_id(self) -> int:
-        total = contar_total_reservas()
-        return total + 1
+        from modelos.reserva import obter_maior_id_reserva 
+        maior_id = obter_maior_id_reserva()
+        return maior_id + 1 if maior_id else 1
     
     def criar_reserva(self, maquina_id: str, usuario_id: str, data_agendamento: str, hora_inicio: str):
         print(f"DEBUG: Tentando criar reserva - Máquina: {maquina_id}, Usuário: {usuario_id}, Data: {data_agendamento}, Hora: {hora_inicio}")

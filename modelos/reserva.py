@@ -141,16 +141,16 @@ def atualizar_data_hora_reserva(id_reserva: str, nova_data: str, nova_hora: str,
     finally:
         conn.close()
 
-def contar_total_reservas() -> int:
-    """Conta o número total de reservas já criadas para gerar o próximo ID."""
-    sql = "SELECT COUNT(*) FROM reservas"
+def obter_maior_id_reserva() -> int:
+    """Retorna o maior ID de reserva existente"""
+    sql = "SELECT COALESCE(MAX(id_reserva), 0) FROM reservas"
     conn = conectar()
     try:
         cur = conn.cursor()
         cur.execute(sql)
-        total = cur.fetchone()[0]
+        maior_id = cur.fetchone()[0]
         cur.close()
-        return total
+        return maior_id
     finally:
         conn.close()
 
