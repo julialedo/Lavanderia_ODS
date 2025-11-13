@@ -52,6 +52,8 @@ def listar_ocorrencias_por_lavanderia_db(id_lavanderia: int) -> list[ProblemaRep
                 
                 if resultados:
                     for res in resultados:
+                        if res.get("id_maquina") is not None:
+                            res["id_maquina"] = str(res["id_maquina"])
                         ocorrencias.append(ProblemaReportado(**res))
             return ocorrencias
     except Exception as e:
