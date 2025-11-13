@@ -21,17 +21,31 @@ def tela_morador():
     usuario_id_logado = dados_usuario["id_usuario"]
     nome_usuario_logado = dados_usuario["nome"]
     id_lavanderia_logada = st.session_state.get("id_lavanderia")
+    
+    # 🔥 NOVO: Buscar nome da lavanderia
+    nome_lavanderia = "Sua Lavanderia"
+    if id_lavanderia_logada:
+        from controladores.controlador_plataforma import ControladorPlataforma
+        controlador_plataforma = ControladorPlataforma()
+        lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(id_lavanderia_logada)
+        if lavanderia_info:
+            nome_lavanderia = lavanderia_info.get("nome", "Sua Lavanderia")
+    
     st.sidebar.title("Menu")
   
     # Mostrar nome do usuário logado
     if "usuario" in st.session_state:
         st.sidebar.write(f"👤 Usuário: {st.session_state['usuario']}")
+    
+    # 🔥 NOVO: Mostrar lavanderia na sidebar
+    st.sidebar.write(f"🏢 Lavanderia: {nome_lavanderia}")
+    
     # Botão de logout
     if st.sidebar.button("🚪 Sair"):
         st.session_state.clear()
         st.rerun()
 
-    st.title("👤 Área do Morador")
+    st.title(f"👤 Área do Morador - {nome_lavanderia}")
     st.markdown("---")
     
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -50,7 +64,13 @@ def tela_morador():
         col1, col2 = st.columns(2)
         
         with col1:
-            maquinas = controlador_maquina.listar_por_lavanderia(1)  # Assumindo lavanderia ID 1
+            # 🔥 MODIFICADO: Usar lavanderia do usuário logado
+            if id_lavanderia_logada:
+                maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia_logada)
+            else:
+                st.error("❌ Lavanderia não encontrada. Contate o administrador.")
+                maquinas = []
+                
             if maquinas:
                 opcoes_maquinas = []
                 for maquina in maquinas:
@@ -58,19 +78,21 @@ def tela_morador():
                         descricao = f"Máquina {maquina.id_maquina} - {maquina.tipo_maquina}"
                         opcoes_maquinas.append(descricao)
                 
-                maquina_selecionada = st.selectbox("Selecione a máquina:", opcoes_maquinas)
-                # Extrair ID da máquina da descrição selecionada
-                maquina_id = maquina_selecionada.split(" ")[1]  
+                if opcoes_maquinas:
+                    maquina_selecionada = st.selectbox("Selecione a máquina:", opcoes_maquinas)
+                    # Extrair ID da máquina da descrição selecionada
+                    maquina_id = maquina_selecionada.split(" ")[1]  
+                else:
+                    st.info("ℹ️ Nenhuma máquina disponível para visualização.")
+                    maquina_id = None
             else:
-
-                maquinas = ["Máquina 1 - Lavadora", "Máquina 2 - Secadora", "Máquina 3 - Lavadora"]
-                maquina_selecionada = st.selectbox("Selecione a máquina:", maquinas)
-                maquina_id = "1" if "1" in maquina_selecionada else "2"
+                st.info("ℹ️ Nenhuma máquina cadastrada nesta lavanderia.")
+                maquina_id = None
         
         with col2:
             data_selecionada = st.date_input("Selecione a data")
         
-        if st.button("🔍 Ver Horários Disponíveis"):
+        if st.button("🔍 Ver Horários Disponíveis") and maquina_id:
             # Usar controlador real para buscar horários
             horarios_disponiveis = controlador_reserva.visualizar_horarios_disponiveis(
                 maquina_id, 
@@ -87,6 +109,8 @@ def tela_morador():
                         st.success("✅ Disponível")
             else:
                 st.info("📭 Não há horários disponíveis para esta data/máquina.")
+        elif not maquina_id:
+            st.warning("⚠️ Selecione uma máquina para ver os horários disponíveis.")
     
     # ------------------------------------------------------------------
     # TAB 2 - FAZER AGENDAMENTO
@@ -99,7 +123,12 @@ def tela_morador():
             maquina_id_para_agendar = None
 
             with col1:
-                maquinas = controlador_maquina.listar_por_lavanderia(1)
+                # 🔥 MODIFICADO: Usar lavanderia do usuário logado
+                if id_lavanderia_logada:
+                    maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia_logada)
+                else:
+                    maquinas = []
+                    
                 opcoes_maquinas_agendar = [] 
                 if maquinas:
                     for maquina in maquinas:
@@ -116,7 +145,7 @@ def tela_morador():
 
                     maquina_id_para_agendar = maquina_selecionada_agendar.split(" ")[1]
                 else:
-                    st.info("Nenhuma máquina disponível para agendamento.")
+                    st.info("ℹ️ Nenhuma máquina disponível para agendamento.")
 
                 data_agendamento = st.date_input("Data do agendamento", key="agendamento_data")
             
@@ -131,8 +160,6 @@ def tela_morador():
                 if maquina_id_para_agendar: 
                     # Usar controlador real para criar reserva
                     reserva = controlador_reserva.criar_reserva(
-                        # --- CORREÇÃO 3 ---
-                        # Passar a variável correta para o controlador
                         maquina_id_para_agendar,
                         usuario_id_logado, # Usando o ID da sessão
                         data_agendamento.strftime("%Y-%m-%d"),
@@ -144,8 +171,8 @@ def tela_morador():
                     else:
                         st.error("❌ Erro ao fazer reserva. Horário indisponível ou dados inválidos.")
                 else:
-
                     st.error("❌ Nenhuma máquina selecionada para o agendamento.")
+    
     # ------------------------------------------------------------------
     # TAB 3 - MINHAS RESERVAS
     with tab3:
@@ -223,8 +250,12 @@ def tela_morador():
                                     
                             maquina_id_edit = None
                             with col_edit1:
-                                # Buscar máquinas disponíveis
-                                maquinas = controlador_maquina.listar_por_lavanderia(1)
+                                # 🔥 MODIFICADO: Usar lavanderia do usuário logado
+                                if id_lavanderia_logada:
+                                    maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia_logada)
+                                else:
+                                    maquinas = []
+                                    
                                 opcoes_maquinas_editar = []
                                 if maquinas:
                                     for maquina in maquinas:
@@ -248,7 +279,7 @@ def tela_morador():
                                     )
                                     maquina_id_edit = maquina_edit_selecionada.split(" ")[1]
                                 else:
-                                    st.info("Nenhuma máquina disponível para edição.")
+                                    st.info("ℹ️ Nenhuma máquina disponível para edição.")
                                     maquina_id_edit = str(reserva.id_maquina) # Mantém o ID antigo se não houver opções
                             
                             with col_edit2:
@@ -382,7 +413,11 @@ def tela_morador():
 
         with st.form("form_reportar_ocorrencia", clear_on_submit=True):
             
-            maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia_logada)
+            # 🔥 MODIFICADO: Usar lavanderia do usuário logado
+            if id_lavanderia_logada:
+                maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia_logada)
+            else:
+                maquinas = []
             
             # --- MUDANÇA 1: Adicionar a opção "Nenhuma" como padrão ---
             opcoes_maquinas_reporte = ["Nenhuma (Problema geral/Outro)"]
