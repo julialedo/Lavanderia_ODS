@@ -456,7 +456,7 @@ def abrir_relatorios():
         
         except Exception as e:
             st.error(f"❌ Erro ao gerar relatório: {str(e)}")
-            st.info("💡 Verifique se as datas estão corretas e se há dados no período selecionado.")
+            st.info("💡 Verifique se as dates estão corretas e se há dados no período selecionado.")
     
     # Botão de voltar sempre visível
     st.markdown("---")
@@ -628,14 +628,25 @@ def tela_adm_predio():
     if "usuario" in st.session_state:
         st.sidebar.write(f"👤 Usuário: {st.session_state['usuario']}")
     
+    # 🔥 NOVO: Buscar e mostrar nome da lavanderia
+    id_lavanderia = st.session_state.get("id_lavanderia")
+    nome_lavanderia = "Sua Lavanderia"
+    if id_lavanderia:
+        from controladores.controlador_plataforma import ControladorPlataforma
+        controlador_plataforma = ControladorPlataforma()
+        lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(id_lavanderia)
+        if lavanderia_info:
+            nome_lavanderia = lavanderia_info.get("nome", "Sua Lavanderia")
+    
+    st.sidebar.write(f"🏢 Lavanderia: {nome_lavanderia}")
+    
     # Botão de logout
     if st.sidebar.button("🚪 Sair"):
         st.session_state.clear()
         st.rerun()
     
-    # Exibe o código/nome da lavanderia se estiver na session_state
-    codigo_lavanderia = st.session_state.get("codigo_lavanderia", "Não Definido")
-    st.subheader(f"Lavanderia: **{codigo_lavanderia}**")
+    # 🔥 MODIFICADO: Mostrar nome da lavanderia no cabeçalho
+    st.subheader(f"Lavanderia: **{nome_lavanderia}**")
     st.markdown("---")
     
     # ----------------------------------------------------
@@ -715,4 +726,3 @@ def tela_adm_predio():
         if st.button("✏️ Editar Perfil", use_container_width=True, key="btn_perfil"):
             st.session_state["subpagina_adm_predio"] = "editar_perfil"
             st.rerun()
-
