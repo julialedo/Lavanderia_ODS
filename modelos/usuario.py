@@ -73,6 +73,7 @@ def editar_usuario(id_usuario: int, nome: str, email: str, telefone: str, nova_s
         return rows_affected > 0 # Retorna True se houve alteração
     finally:
         conn.close() #fecha conexão
+
 # Contar quantidade de usuarios:
 def contar_usuarios() -> int:
 
@@ -191,5 +192,32 @@ def rejeitar_conta_morador(id_usuario: int):
         rows_affected = cur.rowcount
         cur.close()
         return rows_affected > 0
+    finally:
+        conn.close()
+
+# Obter usuário por ID
+def obter_usuario_por_id(usuario_id: int):
+    sql = "SELECT * FROM usuario WHERE id_usuario = %s"
+    conn = conectar()
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(sql, (usuario_id,))
+        usuario = cur.fetchone()
+        cur.close()
+        return usuario
+    finally:
+        conn.close()
+
+# Obter lavanderia do usuário
+def obter_lavanderia_usuario_db(usuario_id: int) -> Optional[int]:
+    """Obtém o ID da lavanderia associada ao usuário"""
+    sql = "SELECT id_lavanderia FROM usuario WHERE id_usuario = %s"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (usuario_id,))
+        resultado = cur.fetchone()
+        cur.close()
+        return resultado[0] if resultado and resultado[0] else None
     finally:
         conn.close()
