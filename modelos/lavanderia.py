@@ -63,3 +63,17 @@ def contar_lavanderias() -> int:
         return qtd_lavanderias #retorna a quantidade de lavanderias
     finally:
         conn.close() #fecha conexão
+
+# 🔥 NOVA FUNÇÃO: Obter lavanderia por ID
+def obter_lavanderia_por_id(lavanderia_id: int):
+    """Busca lavanderia por ID"""
+    sql = "SELECT * FROM lavanderia WHERE id_lavanderia = %s"
+    conn = conectar()
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(sql, (lavanderia_id,))
+        lavanderia = cur.fetchone()
+        cur.close()
+        return lavanderia
+    finally:
+        conn.close()
