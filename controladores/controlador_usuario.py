@@ -6,7 +6,7 @@ from modelos.usuario import (
     autenticar_usuario, editar_usuario, criar_morador, 
     verificar_email_existente, listar_moradores_pendentes_por_lavanderia,
     aprovar_conta_morador, rejeitar_conta_morador, criar_administrador_predio,
-    contar_usuarios
+    contar_usuarios, obter_usuario_por_id, obter_lavanderia_usuario_db
 )
 import re
 
@@ -159,3 +159,20 @@ class ControladorUsuario:
             return None
         except Exception as e:
             raise ValueError(f"Erro ao buscar usuário: {str(e)}")
+
+    # OBTER USUÁRIO POR ID
+    def obter_usuario_por_id(self, usuario_id: int) -> Optional[dict]:
+        """Obtém dados completos do usuário por ID"""
+        try:
+            return obter_usuario_por_id(usuario_id)
+        except Exception as e:
+            raise ValueError(f"Erro ao buscar usuário: {str(e)}")
+
+    # OBTER LAVANDERIA DO USUÁRIO
+    def obter_lavanderia_usuario(self, usuario_id: int) -> Optional[int]:
+        """Obtém o ID da lavanderia associada ao usuário"""
+        try:
+            return obter_lavanderia_usuario_db(usuario_id)
+        except Exception as e:
+            print(f"Erro ao obter lavanderia do usuário: {e}")
+            return None
