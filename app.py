@@ -35,6 +35,14 @@ header_global()
 if not st.session_state["logado"]:
     tela_login()
 else:
+    # 🔥 ADICIONAR: Carregar ID da lavanderia se não estiver na session
+    if "id_lavanderia" not in st.session_state and "id_usuario" in st.session_state:
+        from controladores.controlador_usuario import ControladorUsuario
+        controlador_usuario = ControladorUsuario()
+        id_lavanderia = controlador_usuario.obter_lavanderia_usuario(st.session_state["id_usuario"])
+        if id_lavanderia:
+            st.session_state["id_lavanderia"] = id_lavanderia
+    
     if st.session_state.pagina == "tela_adm_plataforma":
         tela_adm_plataforma()
     elif st.session_state.pagina == "tela_adm_predio":
