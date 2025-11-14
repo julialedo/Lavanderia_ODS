@@ -10,7 +10,8 @@ def conectar():
             port='17609',
             user='root',
             password='beLhPoPmcJbyvMtsfZKroBaWDynJCCDG',
-            database='railway'
+            database='railway',
+            time_zone='-03:00'
         )
         if conexao.is_connected():
             print("Conexão bem-sucedida!")

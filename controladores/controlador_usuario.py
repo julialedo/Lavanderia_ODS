@@ -2,6 +2,7 @@
 # Responsável pelas validações, transformar dados para o model, decisões.
 
 from typing import Optional, Tuple
+from modelos.lavanderia import listar_lavanderias
 from modelos.usuario import (
     autenticar_usuario, editar_usuario, criar_morador, 
     verificar_email_existente, listar_moradores_pendentes_por_lavanderia,
@@ -53,34 +54,58 @@ class ControladorUsuario:
             
         return True
 
+
     # CADASTRAR MORADOR
-    def cadastrar_morador(self, nome: str, email: str, senha: str, telefone: str, 
-                         id_lavanderia: int) -> Tuple[bool, str]:
-        """Cadastra novo morador (status inativa)"""
+    def cadastrar_morador(self, nome: str, email: str, senha: str, telefone: str, id_lavanderia: int) -> Tuple[bool, str]:
         try:
-            # 1. Validações básicas
+            # Validações de campos obrigatórios:
             if not all([nome, email, senha, telefone]):
                 raise ValueError("Todos os campos são obrigatórios!")
             
-            # 2. Validação de email
+            # Verificar se foi adicionado uma lavanderia
+            if id_lavanderia is None:
+                raise ValueError("Por favor, selecione uma lavanderia.")
+        
+            # Validação de telefone:
+            if not self.validar_telefone(telefone):
+                raise ValueError("Telefone inválido! Use oformato como (XX) XXXXXXXXX")
+            
+            # Validação de email:
             if not self.validar_email(email):
                 raise ValueError("Email inválido!")
-            
-            # 3. Validação de senha
+                        
+            # Validação de tamanho da senha:
             if len(senha) < 6:
                 raise ValueError("A senha deve ter pelo menos 6 caracteres")
             
-            # 4. Verificar se email já existe
+            # Verificar se email já existe:
             if verificar_email_existente(email):
                 raise ValueError("Email já cadastrado no sistema")
             
-            # 5. Criar morador (status 'inativa')
+            # Criar morador (status 'inativa')
             novo_id = criar_morador(nome, email, senha, telefone, id_lavanderia)
             
-            return True, f"Cadastro realizado com sucesso! ID: {novo_id}. Aguarde aprovação do administrador."
+            return True, f"Cadastro realizado com sucesso! Aguarde aprovação do administrador."
             
         except Exception as e:
             return False, str(e)
+
+
+    # Validação de Email:
+    def validar_email(self, email: str) -> bool:
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return re.match(pattern, email) is not None
+
+
+    # Validação de Telefone:
+    def validar_telefone(self, telefone: str) -> bool:
+        padrao = r'^(\+55\s?)?(\(?\d{2}\)?\s?)?\d{4,5}-?\d{4}$'
+        return re.match(padrao, telefone) is not None
+    
+    # Listar lavanderias cadastradas:
+    def listar_lavanderias(self):
+        return listar_lavanderias()
+    
 
     # CRIAR ADMINISTRADOR DO PRÉDIO
     def criar_administrador_predio(self, nome: str, email: str, senha: str, 
@@ -144,12 +169,8 @@ class ControladorUsuario:
         except Exception as e:
             raise ValueError(f"Erro ao contar usuários: {str(e)}")
 
-    # VALIDAÇÃO DE EMAIL
-    def validar_email(self, email: str) -> bool:
-        """Valida formato de email"""
-        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        return re.match(pattern, email) is not None
-
+    
+    
     # BUSCAR USUÁRIO POR EMAIL
     def buscar_usuario_por_email(self, email: str) -> Optional[dict]:
         """Busca usuário por email"""

@@ -50,6 +50,7 @@ def criar_administrador_predio(nome: str, email: str, senha: str, telefone: str,
     finally:
         conn.close() #fecha conexão
 
+
 def editar_usuario(id_usuario: int, nome: str, email: str, telefone: str, nova_senha: Optional[str] = None):
     # Base SQL para atualização
     sql = "UPDATE usuario SET nome = %s, email = %s, telefone = %s"
@@ -88,12 +89,10 @@ def contar_usuarios() -> int:
     finally:
         conn.close()
 
+
 def criar_morador(nome: str, email: str, senha: str, telefone: str, id_lavanderia: int):
     
-    sql = """INSERT INTO usuario 
-             (nome, email, senha, telefone, tipo_usuario, status_conta, id_lavanderia) 
-             VALUES (%s, %s, %s, %s, 'morador', 'inativa', %s)"""
-    
+    sql = "INSERT INTO usuario (nome, email, senha, telefone, tipo_usuario, status_conta, data_cadastro_usuario, id_lavanderia) VALUES (%s, %s, %s, %s, 'morador', 'inativa', NOW(), %s)"
     conn = conectar()
     try:
         cur = conn.cursor()
@@ -107,6 +106,7 @@ def criar_morador(nome: str, email: str, senha: str, telefone: str, id_lavanderi
         raise e
     finally:
         conn.close()
+
 
 # Verificar se email já existe (mantém igual)
 def verificar_email_existente(email: str) -> bool:
