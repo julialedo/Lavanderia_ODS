@@ -2,32 +2,39 @@
 # Interface em Streamlit, recebe o input do usuário, chama o controller, mostra o feedback.
 
 import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
 from visao.tela_login import tela_login
 from visao.tela_morador import tela_morador
 from visao.tela_adm_predio import tela_adm_predio
 from visao.tela_adm_plataforma import tela_adm_plataforma
 
 
+#Header que irá aparecer no início da tela
 def header_global():
+    st.markdown("""
+    <style>
+        .block-container {
+            padding-top: 1.5rem !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+    
     st.markdown(
         """
         <div style='text-align: center;'>
-            <h1>🧺 Gerenciador de Lavanderias Coletivas</h1>
-            <p><em>Sistema de reservas e controle de uso de lavanderias</em></p>
+            <h1>🧺 Lavanderias Coletivas</h1>
+            <p><em>Sistema de reservas e controle de uso de lavanderias.</em></p>
         </div>
         <hr>
         """,
         unsafe_allow_html=True
     )
+    
 
 def go_to_home():
     st.session_state.page = "home"
 
 
-
-# Execução Principal:
+#Execução Principal:
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
 

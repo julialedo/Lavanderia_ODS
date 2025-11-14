@@ -44,7 +44,7 @@ def listar_lavanderias() -> List[Lavanderia]:
         cur.execute(sql)  #executa o comando sql 
         for row in cur.fetchall():
             lavanderias.append(Lavanderia(*row)) #para cada lavanderia, salva os dados na lista lavanderias
-            cur.close()
+        cur.close()
         return lavanderias  #retorna a lista de lavanderias
     finally:
         conn.close() #fecha
