@@ -1,8 +1,9 @@
 # View - tela_login.py
 # Interface em Streamlit, recebe o input do usuário, chama o controller, mostra o feedback.
 
-import streamlit as st  # 👈 IMPORT PRECISA VIR PRIMEIRO!
+import streamlit as st 
 from controladores.controlador_usuario import ControladorUsuario
+from visao.tela_cadastro import tela_cadastro
 
 # Inicialização do controlador:
 controlador_usuario = ControladorUsuario()
@@ -14,12 +15,10 @@ def tela_login():
     if "mostrar_cadastro" not in st.session_state:
         st.session_state.mostrar_cadastro = False
     
-    # Verificar se deve mostrar cadastro - AGORA DEPOIS DO IMPORT
+    # Verificar se deve mostrar cadastro
     if st.session_state.mostrar_cadastro:
         try:
-            from visao.tela_cadastro import tela_cadastro
             tela_cadastro()
-            
             if st.button("← Voltar para Login"):
                 st.session_state.mostrar_cadastro = False
                 st.rerun()
