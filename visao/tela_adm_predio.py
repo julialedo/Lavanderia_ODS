@@ -87,9 +87,15 @@ def aprovar_moradores():
         st.rerun()
 
 # Tela de Gerenciamento de Máquinas:
+# Tela de Gerenciamento de Máquinas:
 def gerenciar_maquinas():
     st.subheader("⚙️ Gerenciamento de Máquinas")
     st.markdown("---")
+    
+    # Verifica se está editando uma máquina específica
+    if "editar_maquina" in st.session_state:
+        editar_maquina_screen()
+        return
     
     # Cadastrar Máquinas - Formulário
     with st.expander("➕ Cadastrar Nova Máquina"):
@@ -117,7 +123,7 @@ def gerenciar_maquinas():
     
     st.markdown("---")
     
-    # Listar as Maquinas Cadastradas
+    # Listar as Máquinas Cadastradas
     st.subheader("📋 Máquinas cadastradas")
     try:
         maquinas = controlador_maquina.listar_por_lavanderia(st.session_state["id_lavanderia"])
@@ -127,18 +133,21 @@ def gerenciar_maquinas():
         else:
             for maq in maquinas:
                 with st.expander(f"⚙️ {maq.codigo_maquina} - {maq.tipo_maquina.capitalize()} ({maq.capacidade})"):
-                    st.write(f"**Status atual:** {maq.status_maquina}")
-                    st.write(f"**Tipo:** {maq.tipo_maquina}")
-                    st.write(f"**Capacidade:** {maq.capacidade}")
-                    st.write(f"**ID:** {maq.id_maquina}")
+                    col1, col2, col3 = st.columns([3, 1, 1])
                     
-                    col1, col2 = st.columns([1, 1])
                     with col1:
-                        if st.button(f"✏️ Editar", key=f"edit_{maq.id_maquina}"):
+                        st.write(f"**Status atual:** {maq.status_maquina}")
+                        st.write(f"**Tipo:** {maq.tipo_maquina}")
+                        st.write(f"**Capacidade:** {maq.capacidade}")
+                        st.write(f"**ID:** {maq.id_maquina}")
+                    
+                    with col2:
+                        if st.button("✏️ Editar", key=f"edit_{maq.id_maquina}", use_container_width=True):
                             st.session_state["editar_maquina"] = maq.id_maquina
                             st.rerun()
-                    with col2:
-                        if st.button(f"🗑️ Excluir", key=f"del_{maq.id_maquina}"):
+                    
+                    with col3:
+                        if st.button("🗑️ Excluir", key=f"del_{maq.id_maquina}", use_container_width=True):
                             try:
                                 ok = controlador_maquina.remover_maquina(maq.id_maquina)
                                 if ok:
@@ -151,65 +160,120 @@ def gerenciar_maquinas():
     except Exception as e:
         st.error(f"❌ Erro ao carregar máquinas: {str(e)}")
     
-    # Caso tenha clicado em Editar, mostra o formulário:
-    if "editar_maquina" in st.session_state:
-        maq_id = st.session_state["editar_maquina"]
-        try:
-            maquina = controlador_maquina.obter(maq_id)
-            
-            st.markdown("### ✏️ Editar Máquina")
-            with st.form("form_editar_maquina"):
-                codigo_novo = st.text_input("Código Novo", maquina.codigo_maquina)
-                tipo_novo = st.selectbox(
-                    "Tipo", 
-                    ["lavadora", "secadora"], 
-                    index=["lavadora", "secadora"].index(maquina.tipo_maquina)
-                )
-                capacidade_nova = st.text_input("Capacidade", maquina.capacidade)
-                status_novo = st.selectbox(
-                    "Status", 
-                    ["livre", "em_uso", "manutencao"], 
-                    index=["livre", "em_uso", "manutencao"].index(maquina.status_maquina)
-                )
-                btn_salvar = st.form_submit_button("💾 Salvar alterações")
-                
-                if btn_salvar:
-                    if not codigo_novo:
-                        st.error("❌ O código da máquina é obrigatório!")
-                    elif not capacidade_nova:
-                        st.error("❌ A capacidade da máquina é obrigatória!")
-                    else:
-                        campos = {
-                            "codigo_maquina": codigo_novo,
-                            "tipo_maquina": tipo_novo,
-                            "capacidade": capacidade_nova,
-                            "status_maquina": status_novo
-                        }
-                        try:
-                            ok = controlador_maquina.editar_maquina(maq_id, campos)
-                            if ok:
-                                st.success("✅ Máquina atualizada com sucesso!")
-                                del st.session_state["editar_maquina"]
-                                st.rerun()
-                            else:
-                                st.warning("⚠️ Nenhuma alteração detectada.")
-                        except Exception as e:
-                            st.error(f"❌ Erro ao atualizar máquina: {str(e)}")
-            
-            if st.button("⬅️ Cancelar edição"):
-                del st.session_state["editar_maquina"]
-                st.rerun()
-                
-        except Exception as e:
-            st.error(f"❌ Erro ao carregar dados da máquina: {str(e)}")
-            if st.button("⬅️ Voltar"):
-                del st.session_state["editar_maquina"]
-                st.rerun()
-    
     st.markdown("---")
     if st.button("⬅️ Voltar ao Menu Principal"):
         st.session_state.subpagina_adm_predio = None
         st.rerun()
+
+# Tela de Edição de Máquina (seguindo o padrão do Editar Perfil)
+def editar_maquina_screen():
+    st.subheader("✏️ Editar Máquina")
+    st.markdown("---")
+    
+    maq_id = st.session_state["editar_maquina"]
+    
+    try:
+        maquina = controlador_maquina.obter(maq_id)
+        
+        if not maquina:
+            st.error("❌ Máquina não encontrada!")
+            if st.button("⬅️ Voltar"):
+                del st.session_state["editar_maquina"]
+                st.rerun()
+            return
+        
+        with st.form("form_editar_maquina"):
+            st.write("**Informações da Máquina**")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                codigo_novo = st.text_input(
+                    "Código da Máquina*", 
+                    value=maquina.codigo_maquina,
+                    help="Código único para identificação (ex: LAV-01, SEC-07)"
+                )
+                
+                tipo_novo = st.selectbox(
+                    "Tipo da Máquina*",
+                    options=["lavadora", "secadora"],
+                    index=0 if maquina.tipo_maquina == "lavadora" else 1
+                )
+            
+            with col2:
+                capacidade_nova = st.text_input(
+                    "Capacidade*", 
+                    value=maquina.capacidade,
+                    help="Capacidade em kg (ex: 8kg, 12kg)"
+                )
+                
+                status_novo = st.selectbox(
+                    "Status*",
+                    options=["livre", "em_uso", "manutencao"],
+                    index=["livre", "em_uso", "manutencao"].index(maquina.status_maquina)
+                )
+            
+            st.caption("* Campos obrigatórios")
+            
+            st.markdown("---")
+            
+            col_btn1, col_btn2 = st.columns([1, 1])
+            
+            with col_btn1:
+                salvar = st.form_submit_button(
+                    "💾 Salvar Alterações", 
+                    use_container_width=True,
+                    type="primary"
+                )
+            
+            with col_btn2:
+                cancelar = st.form_submit_button(
+                    "❌ Cancelar", 
+                    use_container_width=True
+                )
+            
+            if salvar:
+                # Validações
+                if not codigo_novo:
+                    st.error("❌ O código da máquina é obrigatório!")
+                    return
+                
+                if not capacidade_nova:
+                    st.error("❌ A capacidade da máquina é obrigatória!")
+                    return
+                
+                # Preparar campos para atualização
+                campos = {
+                    "codigo_maquina": codigo_novo,
+                    "tipo_maquina": tipo_novo,
+                    "capacidade": capacidade_nova,
+                    "status_maquina": status_novo
+                }
+                
+                try:
+                    ok = controlador_maquina.editar_maquina(maq_id, campos)
+                    if ok:
+                        st.success("✅ Máquina atualizada com sucesso!")
+                        del st.session_state["editar_maquina"]
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ Nenhuma alteração detectada ou máquina não encontrada.")
+                        
+                except Exception as e:
+                    st.error(f"❌ Erro ao atualizar máquina: {str(e)}")
+            
+            if cancelar:
+                st.info("ℹ️ Alterações canceladas.")
+                del st.session_state["editar_maquina"]
+                st.rerun()
+    
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar dados da máquina: {str(e)}")
+        
+        st.markdown("---")
+        if st.button("⬅️ Voltar", use_container_width=True):
+            del st.session_state["editar_maquina"]
+            st.rerun()
 
 # Tela de Relatórios:
 def abrir_relatorios():
