@@ -19,29 +19,46 @@ class ControladorManutencao:
         if not id_maquina or not data_agendada or not hora_agendada or not descricao or not nome_adm:
             raise ValueError("Todos os campos são obrigatórios")
 
-        # DEBUG: Verificar os valores recebidos
+        # DEBUG DETALHADO: Verificar os valores recebidos
         print(f"🔍 DEBUG - Controlador - Valores recebidos:")
         print(f"ID Máquina: {id_maquina}")
-        print(f"Data: {data_agendada}")
-        print(f"Hora: {hora_agendada}")
+        print(f"Data: {data_agendada} (tipo: {type(data_agendada)})")
+        print(f"Hora: {hora_agendada} (tipo: {type(hora_agendada)})")
         print(f"Descrição: {descricao}")
         print(f"Nome ADM: {nome_adm}")
 
+        # CORREÇÃO: Se hora_agendada for um objeto time, converter para string
+        if hasattr(hora_agendada, 'strftime'):
+            # É um objeto time, converter para string no formato HH:MM:SS
+            hora_agendada = hora_agendada.strftime("%H:%M:%S")
+            print(f"🔄 Hora convertida de time para string: {hora_agendada}")
+
+        # Garantir que a hora esteja no formato HH:MM:SS
+        if ':' in hora_agendada:
+            partes_hora = hora_agendada.split(':')
+            if len(partes_hora) == 2:  # Formato "HH:MM"
+                hora_agendada = f"{partes_hora[0]}:{partes_hora[1]}:00"
+                print(f"🔄 Hora formatada para HH:MM:SS: {hora_agendada}")
+
         # Combinar data e hora em um DATETIME
         datetime_agendada = f"{data_agendada} {hora_agendada}"
-        print(f"DEBUG - DATETIME agendada: {datetime_agendada}")
+        print(f"✅ DATETIME FINAL para salvar: {datetime_agendada}")
 
         # Verificar se a data é futura
-        data_agendada_obj = datetime.strptime(data_agendada, "%Y-%m-%d").date()
-        if data_agendada_obj < datetime.now().date():
-            raise ValueError("A data de agendamento deve ser futura")
+        try:
+            data_agendada_obj = datetime.strptime(
+                data_agendada, "%Y-%m-%d").date()
+            if data_agendada_obj < datetime.now().date():
+                raise ValueError("A data de agendamento deve ser futura")
+        except ValueError as e:
+            raise ValueError(f"Data de agendamento inválida: {e}")
 
         # Verificar se já existe manutenção agendada
         if verificar_manutencao_agendada(id_maquina, datetime_agendada):
             raise ValueError(
                 "Já existe uma manutenção agendada para esta máquina neste horário")
 
-        # Criar objeto manutenção - CORRIGIDO: sem hora_agendada
+        # Criar objeto manutenção
         manutencao = Manutencao(
             id_manutencao=None,
             id_maquina=id_maquina,
@@ -53,6 +70,7 @@ class ControladorManutencao:
 
         # Salvar no banco
         new_id = criar_manutencao(manutencao)
+        print(f"✅ Manutenção salva com ID: {new_id}")
         return new_id
 
     # Registrar manutenção realizada
@@ -66,19 +84,18 @@ class ControladorManutencao:
                 "ID da máquina, descrição e nome do admin são obrigatórios")
 
         data_realizada = data_realizada or datetime.now().strftime("%Y-%m-%d")
-        data_agendada = data_realizada  # Para manutenções corretivas, usamos a mesma data
 
-        # DEBUG: Verificar os valores recebidos
-        print(f"🔍 DEBUG - Controlador - Valores recebidos (Realizada):")
+        # Para manutenções corretivas, usar data atual e hora padrão (00:00:00)
+        data_hora_realizada = f"{data_realizada} 00:00:00"
+
+        print(f"🔍 DEBUG - Manutenção Realizada:")
         print(f"ID Máquina: {id_maquina}")
-        print(f"Descrição: {descricao}")
-        print(f"Nome ADM: {nome_adm}")
-        print(f"Data Realizada: {data_realizada}")
+        print(f"Data/Hora: {data_hora_realizada}")
 
         manutencao = Manutencao(
             id_manutencao=None,
             id_maquina=id_maquina,
-            data_agendada=data_agendada,
+            data_agendada=data_hora_realizada,
             data_realizada=data_realizada,
             descricao=descricao,
             nome_adm=nome_adm
