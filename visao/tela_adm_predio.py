@@ -357,13 +357,24 @@ def gerenciar_manutencoes():
                 col1, col2 = st.columns([1, 1])
                 with col1:
                     if st.form_submit_button("📅 Agendar Manutenção", use_container_width=True):
+                        # DEBUG NO STREAMLIT
+                        st.write(f"🔍 DEBUG STREAMLIT:")
+                        st.write(
+                            f"Data selecionada: {data_agendada} (tipo: {type(data_agendada)})")
+                        st.write(
+                            f"Hora selecionada: {hora_agendada} (tipo: {type(hora_agendada)})")
+                        st.write(
+                            f"Data formatada: {data_agendada.strftime('%Y-%m-%d')}")
+                        st.write(
+                            f"Hora formatada: {hora_agendada.strftime('%H:%M:%S')}")
+
                         try:
                             id_maquina = opcoes_maquinas[maquina_selecionada]
                             manutencao_id = controlador_manutencao.agendar_manutencao_preventiva(
                                 id_maquina=id_maquina,
                                 data_agendada=data_agendada.strftime(
                                     "%Y-%m-%d"),
-                                hora_agendada=hora_agendada.strftime("%H:%M"),
+                                hora_agendada=hora_agendada,  # ENVIAR O OBJETO TIME DIRETO
                                 descricao=descricao,
                                 nome_adm=nome_adm_input
                             )
@@ -409,7 +420,8 @@ def gerenciar_manutencoes():
                     if st.form_submit_button("💾 Registrar Manutenção", use_container_width=True):
                         try:
                             id_maquina = opcoes_maquinas[maquina_selecionada]
-                            manutencao_id = controlador_manutencao.registrar_manutenção_realizada(
+                            # CORREÇÃO: função sem acento
+                            manutencao_id = controlador_manutencao.registrar_manutencao_realizada(
                                 id_maquina=id_maquina,
                                 descricao=descricao,
                                 nome_adm=nome_adm_input,
@@ -442,17 +454,40 @@ def gerenciar_manutencoes():
                     f"⚠️ Você tem {len(manutencoes_pendentes)} manutenção(ões) pendente(s)")
 
                 for manutencao in manutencoes_pendentes:
-                    # Formatar data e hora para exibição
-                    data_hora_agendada = f"{manutencao.data_agendada} {manutencao.hora_agendada if manutencao.hora_agendada else ''}"
+                    # CORREÇÃO: Formatar data e hora para exibição correta
+                    data_formatada = manutencao.data_agendada
+                    if isinstance(data_formatada, str) and ' ' in data_formatada:
+                        # Se data_agendada contém data e hora
+                        data_parts = data_formatada.split(' ')
+                        data_str = data_parts[0]
+                        hora_str = data_parts[1] if len(data_parts) > 1 else ''
 
-                    with st.expander(f"📅 Manutenção #{manutencao.id_manutencao} - Agendada: {data_hora_agendada}"):
+                        # Formatar a data para exibição (DD/MM/AAAA)
+                        try:
+                            data_obj = datetime.strptime(data_str, "%Y-%m-%d")
+                            data_formatada_br = data_obj.strftime("%d/%m/%Y")
+
+                            # Formatar a hora (remover segundos se existirem)
+                            if hora_str and ':' in hora_str:
+                                hora_parts = hora_str.split(':')
+                                if len(hora_parts) >= 2:
+                                    hora_formatada = f"{hora_parts[0]}:{hora_parts[1]}"
+                                    data_formatada = f"{data_formatada_br} {hora_formatada}"
+                                else:
+                                    data_formatada = f"{data_formatada_br} {hora_str}"
+                            else:
+                                data_formatada = f"{data_formatada_br} {hora_str}"
+                        except:
+                            data_formatada = f"{data_str} {hora_str}"
+
+                    with st.expander(f"📅 Manutenção #{manutencao.id_manutencao} - Agendada: {data_formatada}"):
                         col1, col2 = st.columns([3, 1])
 
                         with col1:
                             st.write(
                                 f"**Máquina ID:** {manutencao.id_maquina}")
                             st.write(
-                                f"**Data Agendada:** {data_hora_agendada}")
+                                f"**Data Agendada:** {data_formatada}")
                             st.write(
                                 f"**Agendado por:** {manutencao.nome_adm}")
                             st.write(f"**Descrição:** {manutencao.descricao}")
@@ -506,8 +541,31 @@ def gerenciar_manutencoes():
                         icone = "📅"
                         status = "Pendente"
 
-                    # Formatar data e hora para exibição
-                    data_hora_agendada = f"{manutencao.data_agendada} {manutencao.hora_agendada if manutencao.hora_agendada else ''}"
+                    # CORREÇÃO: Formatar data e hora para exibição correta
+                    data_formatada = manutencao.data_agendada
+                    if isinstance(data_formatada, str) and ' ' in data_formatada:
+                        # Se data_agendada contém data e hora
+                        data_parts = data_formatada.split(' ')
+                        data_str = data_parts[0]
+                        hora_str = data_parts[1] if len(data_parts) > 1 else ''
+
+                        # Formatar a data para exibição (DD/MM/AAAA)
+                        try:
+                            data_obj = datetime.strptime(data_str, "%Y-%m-%d")
+                            data_formatada_br = data_obj.strftime("%d/%m/%Y")
+
+                            # Formatar a hora (remover segundos se existirem)
+                            if hora_str and ':' in hora_str:
+                                hora_parts = hora_str.split(':')
+                                if len(hora_parts) >= 2:
+                                    hora_formatada = f"{hora_parts[0]}:{hora_parts[1]}"
+                                    data_formatada = f"{data_formatada_br} {hora_formatada}"
+                                else:
+                                    data_formatada = f"{data_formatada_br} {hora_str}"
+                            else:
+                                data_formatada = f"{data_formatada_br} {hora_str}"
+                        except:
+                            data_formatada = f"{data_str} {hora_str}"
 
                     with st.expander(f"{icone} Manutenção #{manutencao.id_manutencao} - {status}"):
                         col1, col2 = st.columns(2)
@@ -516,7 +574,7 @@ def gerenciar_manutencoes():
                             st.write(
                                 f"**Máquina ID:** {manutencao.id_maquina}")
                             st.write(
-                                f"**Data Agendada:** {data_hora_agendada}")
+                                f"**Data Agendada:** {data_formatada}")
                             st.write(
                                 f"**Agendado por:** {manutencao.nome_adm}")
 
