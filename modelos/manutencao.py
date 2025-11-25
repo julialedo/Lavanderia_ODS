@@ -13,7 +13,6 @@ class Manutencao:
     data_realizada: Optional[str]
     descricao: str
     nome_adm: str
-    # Removido: hora_agendada
 
 # Criar manutenção
 
@@ -50,7 +49,7 @@ def criar_manutencao(manutencao: Manutencao) -> int:
 
 def listar_manutencoes_por_lavanderia(id_lavanderia: int) -> List[Manutencao]:
     sql = """
-    SELECT id_manutencao, id_maquina, data_agendada, data_realizada, descricao, nome_adm
+    SELECT m.id_manutencao, m.id_maquina, m.data_agendada, m.data_realizada, m.descricao, m.nome_adm
     FROM manutencoes m
     JOIN maquina maq ON m.id_maquina = maq.id_maquina
     WHERE maq.id_lavanderia = %s
@@ -62,7 +61,6 @@ def listar_manutencoes_por_lavanderia(id_lavanderia: int) -> List[Manutencao]:
         cur = conn.cursor()
         cur.execute(sql, (id_lavanderia,))
         for row in cur.fetchall():
-            # Selecionar apenas as colunas que existem no dataclass
             manutencoes.append(Manutencao(
                 id_manutencao=row[0],
                 id_maquina=row[1],
@@ -84,7 +82,7 @@ def listar_manutencoes_por_lavanderia(id_lavanderia: int) -> List[Manutencao]:
 
 def listar_manutencoes_pendentes(id_lavanderia: int) -> List[Manutencao]:
     sql = """
-    SELECT id_manutencao, id_maquina, data_agendada, data_realizada, descricao, nome_adm
+    SELECT m.id_manutencao, m.id_maquina, m.data_agendada, m.data_realizada, m.descricao, m.nome_adm
     FROM manutencoes m
     JOIN maquina maq ON m.id_maquina = maq.id_maquina
     WHERE maq.id_lavanderia = %s AND m.data_realizada IS NULL
@@ -96,7 +94,6 @@ def listar_manutencoes_pendentes(id_lavanderia: int) -> List[Manutencao]:
         cur = conn.cursor()
         cur.execute(sql, (id_lavanderia,))
         for row in cur.fetchall():
-            # Selecionar apenas as colunas que existem no dataclass
             manutencoes.append(Manutencao(
                 id_manutencao=row[0],
                 id_maquina=row[1],
