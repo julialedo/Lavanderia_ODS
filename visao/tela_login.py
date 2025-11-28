@@ -1,23 +1,21 @@
 # View - tela_login.py
-# Interface em Streamlit, recebe o input do usuário, chama o controller, mostra o feedback.
-
 import streamlit as st 
-from controladores.controlador_usuario import ControladorUsuario
-from visao.tela_cadastro import tela_cadastro
 
-# Inicialização do controlador:
-controlador_usuario = ControladorUsuario()
+# Controladores inicializados uma vez
+try:
+    from controladores.controlador_usuario import ControladorUsuario
+    controlador_usuario = ControladorUsuario()
+except ImportError:
+    controlador_usuario = None
 
-
-# Tela de Login:
 def tela_login():
-    # Inicializar session_state se não existir
+    # Inicialização simplificada
     if "mostrar_cadastro" not in st.session_state:
         st.session_state.mostrar_cadastro = False
     
-    # Verificar se deve mostrar cadastro
     if st.session_state.mostrar_cadastro:
         try:
+            from visao.tela_cadastro import tela_cadastro
             tela_cadastro()
             if st.button("← Voltar para Login"):
                 st.session_state.mostrar_cadastro = False
@@ -28,7 +26,7 @@ def tela_login():
             st.session_state.mostrar_cadastro = False
             st.rerun()
     
-    # Seção de Login normal
+    # Seção de Login
     st.title("🔐 Login - Sistema de Lavanderia")
     st.markdown("---")
 
@@ -39,23 +37,31 @@ def tela_login():
         senha = st.text_input("Senha", type="password")
 
         if st.button("Entrar", use_container_width=True):              
+            if not controlador_usuario:
+                st.error("Sistema temporariamente indisponível")
+                return
+                
             try:
                 usuario = controlador_usuario.login(email, senha)
 
-                st.session_state["logado"] = True
-                st.session_state["usuario"] = usuario["nome"]
-                st.session_state["usuario_dados"] = usuario
-                st.session_state["tipo"] = usuario["tipo_usuario"]
-                st.session_state["id_lavanderia"] = usuario.get("id_lavanderia")
+                st.session_state.update({
+                    "logado": True,
+                    "usuario": usuario["nome"],
+                    "usuario_dados": usuario,
+                    "tipo": usuario["tipo_usuario"],
+                    "id_lavanderia": usuario.get("id_lavanderia")
+                })
 
                 st.success(f"Bem-vindo, {usuario['nome']}!")
 
-                if usuario["tipo_usuario"] == "adm_plataforma":
-                    st.session_state["pagina"] = "tela_adm_plataforma"
-                elif usuario["tipo_usuario"] == "adm_predio":
-                    st.session_state["pagina"] = "tela_adm_predio"
-                else:
-                    st.session_state["pagina"] = "tela_morador"
+                # Determinar página baseada no tipo de usuário
+                paginas = {
+                    "adm_plataforma": "tela_adm_plataforma",
+                    "adm_predio": "tela_adm_predio"
+                }
+                st.session_state["pagina"] = paginas.get(
+                    usuario["tipo_usuario"], "tela_morador"
+                )
 
                 st.rerun()
 
