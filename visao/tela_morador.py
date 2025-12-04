@@ -3,21 +3,76 @@
 
 import streamlit as st
 from datetime import datetime
-from controladores.controlador_reserva import ControladorReserva
-from controladores.controlador_maquina import ControladorMaquina
-from controladores.controlador_usuario import ControladorUsuario
-from controladores.controlador_ocorrencia import ControladorOcorrencia 
 
-# Inicialização dos controladores:
-controlador_reserva = ControladorReserva()
-controlador_maquina = ControladorMaquina()
-controlador_usuario = ControladorUsuario()
-controlador_ocorrencia = ControladorOcorrencia()
+# Controladores inicializados UMA VEZ no topo
+try:
+    from controladores.controlador_reserva import ControladorReserva
+    from controladores.controlador_maquina import ControladorMaquina
+    from controladores.controlador_usuario import ControladorUsuario
+    from controladores.controlador_ocorrencia import ControladorOcorrencia
+    
+    controlador_reserva = ControladorReserva()
+    controlador_maquina = ControladorMaquina()
+    controlador_usuario = ControladorUsuario()
+    controlador_ocorrencia = ControladorOcorrencia()
+except ImportError:
+    # Fallback para evitar quebras
+    controlador_reserva = None
+    controlador_maquina = None
+    controlador_usuario = None
+    controlador_ocorrencia = None
 
+# Cache para dados frequentemente acessados
+def get_lavanderia_nome(id_lavanderia):
+    """Cache do nome da lavanderia"""
+    if not id_lavanderia:
+        return "Sua Lavanderia"
+        
+    cache_key = f"lavanderia_nome_{id_lavanderia}"
+    if cache_key not in st.session_state:
+        try:
+            from controladores.controlador_plataforma import ControladorPlataforma
+            controlador_plataforma = ControladorPlataforma()
+            lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(id_lavanderia)
+            st.session_state[cache_key] = lavanderia_info.get("nome", "Sua Lavanderia") if lavanderia_info else "Sua Lavanderia"
+        except:
+            st.session_state[cache_key] = "Sua Lavanderia"
+    return st.session_state[cache_key]
 
-# Tela inicial do Morador:
+def get_maquinas_lavanderia(id_lavanderia):
+    """Cache das máquinas da lavanderia"""
+    if not id_lavanderia:
+        return []
+        
+    cache_key = f"maquinas_{id_lavanderia}"
+    if cache_key not in st.session_state:
+        try:
+            maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia) if controlador_maquina else []
+            st.session_state[cache_key] = maquinas
+        except:
+            st.session_state[cache_key] = []
+    return st.session_state[cache_key]
+
+def clear_maquinas_cache(id_lavanderia):
+    """Limpa cache de máquinas quando necessário"""
+    if id_lavanderia:
+        cache_key = f"maquinas_{id_lavanderia}"
+        if cache_key in st.session_state:
+            del st.session_state[cache_key]
+
 def tela_morador():
+    # Verificação inicial de controladores
+    if not all([controlador_reserva, controlador_maquina, controlador_usuario, controlador_ocorrencia]):
+        st.error("⚠️ Sistema temporariamente indisponível. Tente novamente.")
+        if st.button("🔄 Recarregar"):
+            st.rerun()
+        return
+    
     dados_usuario = st.session_state.get("usuario_dados")
+    if not dados_usuario:
+        st.error("Sessão expirada. Faça login novamente.")
+        return
+        
     usuario_id_logado = dados_usuario["id_usuario"]
     nome_usuario_logado = dados_usuario["nome"]
     id_lavanderia_logada = st.session_state.get("id_lavanderia")
@@ -76,12 +131,7 @@ def tela_morador():
         col1, col2 = st.columns(2)
         
         with col1:
-            # 🔥 MODIFICADO: Usar lavanderia do usuário logado
-            if id_lavanderia_logada:
-                maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia_logada)
-            else:
-                st.error("❌ Lavanderia não encontrada. Contate o administrador.")
-                maquinas = []
+            maquinas = get_maquinas_lavanderia(id_lavanderia_logada)
                 
             if maquinas:
                 opcoes_maquinas = []
@@ -92,7 +142,6 @@ def tela_morador():
                 
                 if opcoes_maquinas:
                     maquina_selecionada = st.selectbox("Selecione a máquina:", opcoes_maquinas)
-                    # Extrair ID da máquina da descrição selecionada
                     maquina_id = maquina_selecionada.split(" ")[1]  
                 else:
                     st.info("ℹ️ Nenhuma máquina disponível para visualização.")
@@ -105,7 +154,6 @@ def tela_morador():
             data_selecionada = st.date_input("Selecione a data")
         
         if st.button("🔍 Ver Horários Disponíveis") and maquina_id:
-            # Usar controlador real para buscar horários
             horarios_disponiveis = controlador_reserva.visualizar_horarios_disponiveis(
                 maquina_id, 
                 data_selecionada.strftime("%Y-%m-%d")
@@ -135,11 +183,7 @@ def tela_morador():
             maquina_id_para_agendar = None
 
             with col1:
-                # 🔥 MODIFICADO: Usar lavanderia do usuário logado
-                if id_lavanderia_logada:
-                    maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia_logada)
-                else:
-                    maquinas = []
+                maquinas = get_maquinas_lavanderia(id_lavanderia_logada)
                     
                 opcoes_maquinas_agendar = [] 
                 if maquinas:
@@ -154,7 +198,6 @@ def tela_morador():
                         opcoes_maquinas_agendar,
                         key="agendamento_maquina"
                     )
-
                     maquina_id_para_agendar = maquina_selecionada_agendar.split(" ")[1]
                 else:
                     st.info("ℹ️ Nenhuma máquina disponível para agendamento.")
@@ -162,24 +205,23 @@ def tela_morador():
                 data_agendamento = st.date_input("Data do agendamento", key="agendamento_data")
             
             with col2:
-                # Horários disponíveis para seleção (mantendo o formato original)
                 horarios = [f"{hora:02d}:00" for hora in range(8, 20)]
                 hora_agendamento = st.selectbox("Horário de início", horarios)
                 
             
             if st.form_submit_button("📅 Fazer Agendamento"):
-            
                 if maquina_id_para_agendar: 
-                    # Usar controlador real para criar reserva
                     reserva = controlador_reserva.criar_reserva(
                         maquina_id_para_agendar,
-                        usuario_id_logado, # Usando o ID da sessão
+                        usuario_id_logado,
                         data_agendamento.strftime("%Y-%m-%d"),
                         hora_agendamento
                     )
                     
                     if reserva:
                         st.success(f"🎉 Reserva realizada com sucesso! ID: {reserva.id_reserva}")
+                        # Limpa cache para refletir nova reserva
+                        clear_maquinas_cache(id_lavanderia_logada)
                     else:
                         st.error("❌ Erro ao fazer reserva. Horário indisponível ou dados inválidos.")
                 else:
@@ -194,40 +236,29 @@ def tela_morador():
         
         reservas_todas = controlador_reserva.obter_reservas_por_usuario(usuario_id_logado)
         
-        # 2. Filtrar a lista aqui na view
         reservas_validas = []
         if reservas_todas:
             for r in reservas_todas:
-                # Condição 1: Status deve ser 'ativa'
                 if r.status_reserva != "ativa":
                     continue
 
-                # Condição 2: A data não pode ter passado
                 data_reserva = None
                 if isinstance(r.data_reserva, str):
                     try:
-                        # Converte a string da reserva para um objeto data
                         data_reserva = datetime.strptime(r.data_reserva, "%Y-%m-%d").date()
                     except ValueError:
-                        print(f"DEBUG: Data inválida na reserva {r.id_reserva}: {r.data_reserva}")
-                        continue # Pula data inválida
+                        continue
                 else:
-                    # Se já for um objeto 'date', apenas atribui
                     data_reserva = r.data_reserva 
 
-                # Compara a data da reserva com a data de hoje
                 if data_reserva and data_reserva >= hoje:
                     reservas_validas.append(r)
   
 
-        # 3. Usar a nova lista filtrada 'reservas_validas'
         if reservas_validas:
-            # Texto da mensagem atualizado
             st.success(f"📋 Você tem {len(reservas_validas)} reserva(s) ativa(s) (hoje ou no futuro)")
                     
-            # Iterar sobre a lista filtrada
             for reserva in reservas_validas:
-                # O restante do código permanece idêntico
                 with st.expander(f"Reserva {reserva.id_reserva} - {reserva.data_reserva} às {reserva.hora_inicio}"):
                     col1, col2, col3 = st.columns([3, 1, 1])
                             
@@ -238,21 +269,19 @@ def tela_morador():
                         st.write(f"**Status:** {reserva.status_reserva}")
                             
                     with col2:
-                        # Botão Editar Reserva
                         if st.button("✏️ Editar", key=f"edit_{reserva.id_reserva}"):
                             st.session_state[f"editando_reserva_{reserva.id_reserva}"] = True
                             st.rerun()
                             
                     with col3:
-                        # Botão Cancelar Reserva
                         if st.button("❌ Cancelar", key=f"cancel_{reserva.id_reserva}"):
                             if controlador_reserva.cancelar_reserva(reserva.id_reserva, usuario_id_logado):
                                 st.success("Reserva cancelada com sucesso!")
+                                clear_maquinas_cache(id_lavanderia_logada)
                                 st.rerun()
                             else:
                                 st.error("Erro ao cancelar reserva.")
                             
-                    # Formulário de Edição (aparece quando clica em Editar)
                     if st.session_state.get(f"editando_reserva_{reserva.id_reserva}"):
                         st.markdown("---")
                         st.subheader("✏️ Editar Reserva")
@@ -262,11 +291,7 @@ def tela_morador():
                                     
                             maquina_id_edit = None
                             with col_edit1:
-                                # 🔥 MODIFICADO: Usar lavanderia do usuário logado
-                                if id_lavanderia_logada:
-                                    maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia_logada)
-                                else:
-                                    maquinas = []
+                                maquinas = get_maquinas_lavanderia(id_lavanderia_logada)
                                     
                                 opcoes_maquinas_editar = []
                                 if maquinas:
@@ -276,7 +301,6 @@ def tela_morador():
                                             opcoes_maquinas_editar.append(descricao)
                                 
                                 if opcoes_maquinas_editar:
-                                    # Encontrar a máquina atual na lista
                                     maquina_atual = f"Máquina {reserva.id_maquina}"
                                     try:
                                         index_atual = next(i for i, maq in enumerate(opcoes_maquinas_editar) if maquina_atual in maq)
@@ -292,10 +316,9 @@ def tela_morador():
                                     maquina_id_edit = maquina_edit_selecionada.split(" ")[1]
                                 else:
                                     st.info("ℹ️ Nenhuma máquina disponível para edição.")
-                                    maquina_id_edit = str(reserva.id_maquina) # Mantém o ID antigo se não houver opções
+                                    maquina_id_edit = str(reserva.id_maquina)
                             
                             with col_edit2:
-                                # Converter a data da reserva para objeto date se necessário
                                 if isinstance(reserva.data_reserva, str):
                                     data_valor = datetime.strptime(reserva.data_reserva, "%Y-%m-%d").date()
                                 else:
@@ -307,7 +330,6 @@ def tela_morador():
                                     key=f"data_edit_{reserva.id_reserva}"
                                 )
                                     
-                                # Horários disponíveis para a nova data
                                 horarios_disponiveis = []
                                 if maquina_id_edit: 
                                     horarios_disponiveis = controlador_reserva.visualizar_horarios_disponiveis(
@@ -335,7 +357,6 @@ def tela_morador():
                             col_btn1, col_btn2 = st.columns(2)
                             with col_btn1:
                                 if st.form_submit_button("💾 Salvar Alterações", use_container_width=True):
-                                    
                                     if not maquina_id_edit:
                                         st.error("❌ Erro: Nenhuma máquina selecionada para salvar.")
                                     else:
@@ -355,11 +376,11 @@ def tela_morador():
                                                     )
                                                     if nova_reserva:
                                                         st.success("🎉 Reserva editada com sucesso!")
+                                                        clear_maquinas_cache(id_lavanderia_logada)
                                                         del st.session_state[f"editando_reserva_{reserva.id_reserva}"]
                                                         st.rerun()
                                                     else:
                                                         st.error("❌ Não foi possível criar a nova reserva. Horário pode estar ocupado.")
-                                                        # Reverter o cancelamento em caso de erro
                                                         controlador_reserva.criar_reserva(
                                                             reserva.id_maquina,
                                                             usuario_id_logado,
@@ -379,7 +400,6 @@ def tela_morador():
                                     del st.session_state[f"editando_reserva_{reserva.id_reserva}"]
                                     st.rerun()
         else:
-            # Texto da mensagem atualizado
             st.info("📭 Você não possui reservas ativas futuras ou para hoje.")
 
     # ------------------------------------------------------------------
@@ -418,20 +438,17 @@ def tela_morador():
                             st.rerun()
                     except Exception as e:
                         st.error(f"❌ Erro: {str(e)}")
-    # --- ABA DE OCORRÊNCIA ---
+    
+    # ------------------------------------------------------------------
+    # TAB 5 - REPORTAR OCORRÊNCIA
     with tab5:
         st.subheader("⚠️ Reportar uma Ocorrência")
         st.write("Encontrou algo que não está funcionando? Nos avise.")
 
         with st.form("form_reportar_ocorrencia", clear_on_submit=True):
             
-            # 🔥 MODIFICADO: Usar lavanderia do usuário logado
-            if id_lavanderia_logada:
-                maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia_logada)
-            else:
-                maquinas = []
+            maquinas = get_maquinas_lavanderia(id_lavanderia_logada)
             
-            # --- MUDANÇA 1: Adicionar a opção "Nenhuma" como padrão ---
             opcoes_maquinas_reporte = ["Nenhuma (Problema geral/Outro)"]
             
             if maquinas:
@@ -439,7 +456,6 @@ def tela_morador():
                     descricao = f"Máquina {maquina.id_maquina} - {maquina.tipo_maquina} ({maquina.status_maquina})"
                     opcoes_maquinas_reporte.append(descricao)
             
-            # O selectbox agora tem a opção "Nenhuma" e sempre existe
             maquina_selecionada_reporte = st.selectbox(
                 "Qual máquina apresentou a ocorrência? (Opcional)",
                 opcoes_maquinas_reporte,
@@ -454,27 +470,23 @@ def tela_morador():
             enviado = st.form_submit_button("✉️ Enviar Reporte")
 
             if enviado:
-                id_maquina_reporte = None # Começa como None
+                id_maquina_reporte = None
                 
-                # --- MUDANÇA 2: Lógica para definir o ID ou None ---
                 if maquina_selecionada_reporte != "Nenhuma (Problema geral/Outro)":
                     try:
                         id_maquina_reporte = maquina_selecionada_reporte.split(" ")[1]
                     except Exception as e:
-                        print(f"Erro ao extrair ID da máquina para reporte: {e}")
                         st.error("Erro ao selecionar a máquina.")
-                        return # Para a execução se o nome da máquina for inválido
+                        return
 
-                # --- MUDANÇA 3: Simplificar validação ---
                 if not descricao_ocorrencia:
                     st.warning("Por favor, descreva a ocorrência antes de enviar.")
                 else:
-                    # Chamar o controlador (id_maquina_reporte pode ser str ou None)
                     nova_ocorrencia = controlador_ocorrencia.salvar_ocorrencia(
                         id_maquina_reporte,
                         descricao_ocorrencia,
                         nome_usuario_logado,
-                        id_lavanderia_logada # Usar o nome salvo na sessão
+                        id_lavanderia_logada
                     )
                     
                     if nova_ocorrencia:
