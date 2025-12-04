@@ -31,6 +31,20 @@ def tela_morador():
         if lavanderia_info:
             nome_lavanderia = lavanderia_info.get("nome", "Sua Lavanderia")
     
+    col_vazia, col_titulo, col_notificacao = st.columns([1, 8, 1])
+    
+    with col_titulo:
+        st.title(f"👤 Área do Morador - {nome_lavanderia}") # O título agora fica dentro da coluna
+    
+    with col_notificacao:
+        # Use um st.button que altera o estado para 'notificacao'
+        if st.button("🔔", key="btn_notificacao"):
+            st.session_state["pagina"] = "notificacao"
+            st.rerun() # Recarrega para mudar de página
+
+    st.markdown("---")
+    
+    
     st.sidebar.title("Menu")
   
     # Mostrar nome do usuário logado
@@ -45,8 +59,6 @@ def tela_morador():
         st.session_state.clear()
         st.rerun()
 
-    st.title(f"👤 Área do Morador - {nome_lavanderia}")
-    st.markdown("---")
     
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📅 Visualizar Horários", 

@@ -1053,8 +1053,21 @@ def editar_perfil():
 
 
 def tela_adm_predio():
-    st.title("👨‍💼 Área do Administrador do Prédio")
-    st.markdown("---")
+    col_titulo, col_notificacao = st.columns([8, 1])
+
+    with col_titulo:
+        # Se você tem um título para a página principal:
+        st.title("👨‍💼 Área do Administrador do Prédio")
+
+    with col_notificacao:
+        st.write("") # Espaçamento para alinhar com o título
+        st.write("") # Espaçamento para alinhar com o título
+        # Botão que muda o st.session_state["pagina"] para rotear para a tela de notificações
+        if st.button("🔔", key="btn_notificacao_adm_predio", use_container_width=True):
+            st.session_state["pagina"] = "notificacao_adm_predio" # Usaremos esta chave no app.py
+            st.rerun()
+
+
 
     # Carrega dados do usuário ao entrar na tela
     carregar_dados_usuario()

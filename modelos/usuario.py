@@ -221,3 +221,27 @@ def obter_lavanderia_usuario_db(usuario_id: int) -> Optional[int]:
         return resultado[0] if resultado and resultado[0] else None
     finally:
         conn.close()
+
+
+
+def obter_id_adm_por_lavanderia(id_lavanderia: int) -> Optional[int]:
+    """Busca e retorna o ID do usuário Administrador de Prédio associado a uma lavanderia."""
+    
+    # Busca um usuário que seja 'adm_predio' e pertença àquela lavanderia.
+    # Usamos LIMIT 1 para garantir que buscaremos apenas um, mesmo que haja múltiplos admins.
+    sql = """
+    SELECT id_usuario 
+    FROM usuario 
+    WHERE id_lavanderia = %s AND tipo_usuario = 'adm_predio'
+    LIMIT 1
+    """
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_lavanderia,))
+        resultado = cur.fetchone()
+        cur.close()
+        # Retorna o id_usuario (o primeiro elemento da tupla) ou None
+        return resultado[0] if resultado and resultado[0] else None
+    finally:
+        conn.close()
