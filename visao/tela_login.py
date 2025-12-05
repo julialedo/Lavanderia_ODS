@@ -8,7 +8,10 @@ import streamlit as st
 try:
     from controladores.controlador_usuario import ControladorUsuario
     controlador_usuario = ControladorUsuario()
-except ImportError:
+except ImportError as e:
+    # 👈 ESTA LINHA REVELARÁ O PROBLEMA
+    # A mensagem será algo como: cannot import name 'X' from 'Y'
+    st.error(f"❌ Erro Crítico: Falha ao carregar ControladorUsuario. Detalhes: {e}")
     controlador_usuario = None
 
 
