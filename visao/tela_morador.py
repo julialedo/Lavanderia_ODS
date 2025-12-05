@@ -152,19 +152,26 @@ def tela_morador():
     nome_usuario_logado = dados_usuario["nome"]
     id_lavanderia_logada = st.session_state.get("id_lavanderia")
     
-    # Sidebar otimizada
-    with st.sidebar:
-        st.title("Menu")
-        st.write(f"👤 Usuário: {st.session_state.get('usuario', '')}")
-        
-        nome_lavanderia = get_lavanderia_nome(id_lavanderia_logada)
-        st.write(f"🏢 Lavanderia: {nome_lavanderia}")
-        
-        if st.button("🚪 Sair"):
-            st.session_state.clear()
-            st.rerun()
+    # 🔥 NOVO: Buscar nome da lavanderia
+    nome_lavanderia = "Sua Lavanderia"
+    if id_lavanderia_logada:
+        from controladores.controlador_plataforma import ControladorPlataforma
+        controlador_plataforma = ControladorPlataforma()
+        lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(id_lavanderia_logada)
+        if lavanderia_info:
+            nome_lavanderia = lavanderia_info.get("nome", "Sua Lavanderia")
+    
+    col_vazia, col_titulo, col_notificacao = st.columns([1, 8, 1])
+    
+    with col_titulo:
+        st.title(f"👤 Área do Morador - {nome_lavanderia}") # O título agora fica dentro da coluna
+    
+    with col_notificacao:
+        # Use um st.button que altera o estado para 'notificacao'
+        if st.button("🔔", key="btn_notificacao"):
+            st.session_state["pagina"] = "notificacao"
+            st.rerun() # Recarrega para mudar de página
 
-    st.title(f"👤 Área do Morador - {nome_lavanderia}")
     st.markdown("---")
     
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([

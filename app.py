@@ -5,8 +5,9 @@ import streamlit as st
 from visao.tela_login import tela_login
 from visao.tela_morador import tela_morador
 from visao.tela_adm_predio import tela_adm_predio
+from visao.tela_notificacao_adm_predio import tela_notificacao_adm_predio
 from visao.tela_adm_plataforma import tela_adm_plataforma
-
+from visao.tela_notificacao_morador import tela_notificacao_morador
 
 # Header que irá aparecer no início da tela de login/cadastro:
 def header():
@@ -62,3 +63,7 @@ else:
         tela_adm_predio()
     elif st.session_state.pagina == "tela_morador":
         tela_morador()
+    elif st.session_state.pagina == "notificacao":
+        tela_notificacao_morador()
+    elif st.session_state.pagina == "notificacao_adm_predio":
+        tela_notificacao_adm_predio()
