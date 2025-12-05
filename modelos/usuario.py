@@ -17,10 +17,9 @@ class Usuario:
     tipo_usuario: str       # morador, adm_predio, adm_plataforma
     status_conta: str       # ativo, inativo
     data_cadastro_usuario: Optional[str]
-    id_lavanderia: Optional[int]  # pode ser None se for admin da plataforma
 
 
-# Autenticar Login:
+# Autenticar Login: OK
 def autenticar_usuario(email: str, senha: str):
 
     sql = "SELECT * FROM usuario WHERE email = %s AND senha = %s"    #comando sql
@@ -35,22 +34,7 @@ def autenticar_usuario(email: str, senha: str):
         conn.close() #fecha conexão
 
 
-# Criar conta de administrador do prédio:
-def criar_administrador_predio(nome: str, email: str, senha: str, telefone: str, id_lavanderia: int):
-    
-    sql = "INSERT INTO usuario (nome, email, senha, telefone, tipo_usuario, status_conta, id_lavanderia) VALUES (%s, %s, %s, %s, 'adm_predio', 'ativa', %s)"
-    conn = conectar() #abre conexão
-    try:
-        cur = conn.cursor()     #inicia o cursor 
-        cur.execute(sql, (nome, email, senha, telefone, id_lavanderia)) #executa
-        conn.commit()       #precisa de commit porque insert muda o banco
-        new_id = cur.lastrowid      #lastrowid retorna o id, a chave primaria
-        cur.close()     #fecha o cursor
-        return new_id  #retorna o id
-    finally:
-        conn.close() #fecha conexão
-
-
+# Editar dados de perfil:
 def editar_usuario(id_usuario: int, nome: str, email: str, telefone: str, nova_senha: Optional[str] = None):
     # Base SQL para atualização
     sql = "UPDATE usuario SET nome = %s, email = %s, telefone = %s"
@@ -75,7 +59,112 @@ def editar_usuario(id_usuario: int, nome: str, email: str, telefone: str, nova_s
     finally:
         conn.close() #fecha conexão
 
-# Contar quantidade de usuarios:
+
+# Verificar se email já existe: OK
+def verificar_email_existente(email: str) -> bool:
+    sql = "SELECT COUNT(*) FROM usuario WHERE email = %s"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (email))
+        count = cur.fetchone()[0]
+        cur.close()
+        return count > 0
+    finally:
+        conn.close()
+
+
+# Cadastrar novo morador no banco, com status de conta inativa, após ele fazer o cadastro: OK
+def criar_morador(nome: str, email: str, senha: str, telefone: str, id_lavanderia: str):
+    
+    sql = "INSERT INTO usuario (nome, email, senha, telefone, tipo_usuario, status_conta, data_cadastro_usuario) VALUES (%s, %s, %s, %s, 'morador', 'inativa', NOW())"
+    sql_associacao = "INSERT INTO usuario_lavanderia (id_usuario, id_lavanderia) VALUES (%s, %s)"
+
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (nome, email, senha, telefone))
+        new_id = cur.lastrowid
+        cur.execute(sql_associacao, (new_id, id_lavanderia))
+        conn.commit()
+        cur.close()
+        return new_id
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
+
+# Cadastrar novo administrador do prédio: OK +-
+def criar_administrador_predio(nome: str, email: str, senha: str, telefone: str, id_lavanderia: int):
+    
+    sql = "INSERT INTO usuario (nome, email, senha, telefone, tipo_usuario, status_conta) VALUES (%s, %s, %s, %s, 'adm_predio', 'ativa')"
+    sql_associacao = "INSERT INTO usuario_lavanderia (id_usurio, id_lavanderia) VALUES (%s, %s)"
+    conn = conectar() #abre conexão
+    try:
+        cur = conn.cursor()     #inicia o cursor 
+        cur.execute(sql, (nome, email, senha, telefone)) #executa
+        new_id = cur.lastrowid      #lastrowid retorna o id, a chave primaria
+        cur.execute(sql_associacao, (new_id, id_lavanderia))
+        conn.commit()       #precisa de commit porque insert muda o banco
+        cur.close()     #fecha o cursor
+        return new_id, "Administrador e associação criados com sucesso." #retorna o id
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close() #fecha conexão
+
+
+# Listar moradores pendentes (para adm_predio): OK
+def listar_moradores_pendentes_lavanderia(id_lavanderia: int):
+
+    sql = "SELECT u.id_usuario, u.nome, u.email, u.telefone, u.data_cadastro_usuario FROM usuario u INER JOIN usuario_lavanderia ul ON u.id_usuario = ul.id_usuario WHERE u.tipo_usuario = 'morador' AND u.status_conta = 'inativa' AND ul.id_lavanderia = %s"
+    conn = conectar()
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(sql, (id_lavanderia))
+        moradores = cur.fetchall()
+        cur.close()
+        return moradores
+    finally:
+        conn.close()
+
+
+# Aprovar conta de morador (para adm_predio): OK
+def aprovar_conta_morador(id_usuario: int, id_lavanderia: int):
+
+    sql = "UPDATE usuario SET status_conta = 'ativa' WHERE id_usuario = %s AND tipo_usuario = 'morador'"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_usuario))
+        rows_affected = cur.rowcount
+        conn.commit()
+        cur.close()
+        return rows_affected > 0
+    finally:
+        conn.close()
+
+
+# Rejeitar conta de morador (excluir ou manter como inativa): OK
+def rejeitar_conta_morador(id_usuario: int):
+
+    sql = "DELETE FROM usuario WHERE id_usuario = %s AND tipo_usuario = 'morador' AND status_conta = 'inativa'"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_usuario))
+        conn.commit()
+        rows_affected = cur.rowcount
+        cur.close()
+        return rows_affected > 0
+    finally:
+        conn.close()
+
+
+# Contar quantidade de usuarios: OK
 def contar_usuarios() -> int:
 
     sql = "SELECT COUNT(*) FROM usuario"   #comando sql
@@ -90,113 +179,9 @@ def contar_usuarios() -> int:
         conn.close()
 
 
-def criar_morador(nome: str, email: str, senha: str, telefone: str, id_lavanderia: int):
-    
-    sql = "INSERT INTO usuario (nome, email, senha, telefone, tipo_usuario, status_conta, data_cadastro_usuario, id_lavanderia) VALUES (%s, %s, %s, %s, 'morador', 'inativa', NOW(), %s)"
-    conn = conectar()
-    try:
-        cur = conn.cursor()
-        cur.execute(sql, (nome, email, senha, telefone, id_lavanderia))
-        conn.commit()
-        new_id = cur.lastrowid
-        cur.close()
-        return new_id
-    except Exception as e:
-        conn.rollback()
-        raise e
-    finally:
-        conn.close()
-
-
-# Verificar se email já existe (mantém igual)
-def verificar_email_existente(email: str) -> bool:
-    sql = "SELECT COUNT(*) FROM usuario WHERE email = %s"
-    conn = conectar()
-    try:
-        cur = conn.cursor()
-        cur.execute(sql, (email,))
-        count = cur.fetchone()[0]
-        cur.close()
-        return count > 0
-    finally:
-        conn.close()
-
-# Aprovar conta de morador (para admin)
-def aprovar_conta_morador(id_usuario: int):
-    sql = "UPDATE usuario SET status_conta = 'ativa' WHERE id_usuario = %s AND tipo_usuario = 'morador'"
-    conn = conectar()
-    try:
-        cur = conn.cursor()
-        cur.execute(sql, (id_usuario,))
-        conn.commit()
-        rows_affected = cur.rowcount
-        cur.close()
-        return rows_affected > 0
-    finally:
-        conn.close()
-
-# Listar moradores pendentes (para admin)
-def listar_moradores_pendentes(id_lavanderia: int):
-    sql = """SELECT id_usuario, nome, email, telefone, data_cadastro_usuario 
-             FROM usuario 
-             WHERE tipo_usuario = 'morador' AND status_conta = 'inativa' AND id_lavanderia = %s"""
-    
-    conn = conectar()
-    try:
-        cur = conn.cursor(dictionary=True)
-        cur.execute(sql, (id_lavanderia,))
-        moradores = cur.fetchall()
-        cur.close()
-        return moradores
-    finally:
-        conn.close()
-
-# Listar moradores pendentes por lavanderia
-def listar_moradores_pendentes_por_lavanderia(id_lavanderia: int):
-    sql = """SELECT id_usuario, nome, email, telefone, data_cadastro_usuario 
-             FROM usuario 
-             WHERE tipo_usuario = 'morador' AND status_conta = 'inativa' AND id_lavanderia = %s"""
-    
-    conn = conectar()
-    try:
-        cur = conn.cursor(dictionary=True)
-        cur.execute(sql, (id_lavanderia,))
-        moradores = cur.fetchall()
-        cur.close()
-        return moradores
-    finally:
-        conn.close()
-
-# Aprovar conta de morador
-def aprovar_conta_morador(id_usuario: int):
-    sql = "UPDATE usuario SET status_conta = 'ativa' WHERE id_usuario = %s AND tipo_usuario = 'morador'"
-    conn = conectar()
-    try:
-        cur = conn.cursor()
-        cur.execute(sql, (id_usuario,))
-        conn.commit()
-        rows_affected = cur.rowcount
-        cur.close()
-        return rows_affected > 0
-    finally:
-        conn.close()
-
-# Rejeitar conta de morador (excluir ou manter como inativa)
-def rejeitar_conta_morador(id_usuario: int):
-    sql = "DELETE FROM usuario WHERE id_usuario = %s AND tipo_usuario = 'morador' AND status_conta = 'inativa'"
-    conn = conectar()
-    try:
-        cur = conn.cursor()
-        cur.execute(sql, (id_usuario,))
-        conn.commit()
-        rows_affected = cur.rowcount
-        cur.close()
-        return rows_affected > 0
-    finally:
-        conn.close()
-
-# Obter usuário por ID
+# Obter usuário por ID: OK
 def obter_usuario_por_id(usuario_id: int):
+
     sql = "SELECT * FROM usuario WHERE id_usuario = %s"
     conn = conectar()
     try:
@@ -208,16 +193,30 @@ def obter_usuario_por_id(usuario_id: int):
     finally:
         conn.close()
 
-# Obter lavanderia do usuário
-def obter_lavanderia_usuario_db(usuario_id: int) -> Optional[int]:
-    """Obtém o ID da lavanderia associada ao usuário"""
-    sql = "SELECT id_lavanderia FROM usuario WHERE id_usuario = %s"
+
+#IMPLEMENTAR OBTER USUARIO POR EMAIL
+
+
+# Obter lista de lavanderia por usuario
+def obter_lavanderias_por_usuario(usuario_id: int) -> List[int]:
+     
+    sql = " SELECT id_lavanderia FROM usuario_lavanderia WHERE id_usuario = %s"
     conn = conectar()
+    lista_ids = []
     try:
         cur = conn.cursor()
         cur.execute(sql, (usuario_id,))
-        resultado = cur.fetchone()
+        # fetchall() retorna uma lista de tuplas (ex: [(101,), (105,), ...])
+        resultados = cur.fetchall()
         cur.close()
-        return resultado[0] if resultado and resultado[0] else None
+        # Transforma a lista de tuplas em uma lista simples de inteiros
+        if resultados:
+            lista_ids = [resultado[0] for resultado in resultados]
+            
+        return lista_ids
+    
+    except Exception as e:
+        print(f"Erro ao obter lavanderias do usuário: {e}")
+        return []
     finally:
         conn.close()

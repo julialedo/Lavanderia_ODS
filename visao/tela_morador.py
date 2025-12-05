@@ -4,43 +4,42 @@
 import streamlit as st
 from datetime import datetime
 
-# Controladores inicializados UMA VEZ no topo
+#Controladores inicializados UMA VEZ no topo
 try:
     from controladores.controlador_reserva import ControladorReserva
     from controladores.controlador_maquina import ControladorMaquina
     from controladores.controlador_usuario import ControladorUsuario
     from controladores.controlador_ocorrencia import ControladorOcorrencia
+    from controladores.controlador_plataforma import ControladorPlataforma
     
     controlador_reserva = ControladorReserva()
     controlador_maquina = ControladorMaquina()
     controlador_usuario = ControladorUsuario()
     controlador_ocorrencia = ControladorOcorrencia()
+    controlador_plataforma = ControladorPlataforma()
 except ImportError:
-    # Fallback para evitar quebras
+    #Fallback para evitar quebras
     controlador_reserva = None
     controlador_maquina = None
     controlador_usuario = None
     controlador_ocorrencia = None
 
-# Cache para dados frequentemente acessados
-def get_lavanderia_nome(id_lavanderia):
-    """Cache do nome da lavanderia"""
+
+#Cache para dados frequentemente acessados
+def get_lavanderia_nome(id_lavanderia):  #Cache do nome da lavanderia
     if not id_lavanderia:
         return "Sua Lavanderia"
-        
+    
     cache_key = f"lavanderia_nome_{id_lavanderia}"
     if cache_key not in st.session_state:
         try:
-            from controladores.controlador_plataforma import ControladorPlataforma
-            controlador_plataforma = ControladorPlataforma()
             lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(id_lavanderia)
             st.session_state[cache_key] = lavanderia_info.get("nome", "Sua Lavanderia") if lavanderia_info else "Sua Lavanderia"
         except:
             st.session_state[cache_key] = "Sua Lavanderia"
     return st.session_state[cache_key]
 
-def get_maquinas_lavanderia(id_lavanderia):
-    """Cache das máquinas da lavanderia"""
+def get_maquinas_lavanderia(id_lavanderia): #Cache para máquinas da lavanderia
     if not id_lavanderia:
         return []
         
@@ -53,12 +52,88 @@ def get_maquinas_lavanderia(id_lavanderia):
             st.session_state[cache_key] = []
     return st.session_state[cache_key]
 
-def clear_maquinas_cache(id_lavanderia):
-    """Limpa cache de máquinas quando necessário"""
+def clear_maquinas_cache(id_lavanderia): #limpar cache de maquinas
     if id_lavanderia:
         cache_key = f"maquinas_{id_lavanderia}"
         if cache_key in st.session_state:
             del st.session_state[cache_key]
+
+
+#Exibe ciclo ativo se houver
+def exibir_status_usuario_topo(maquinas_status: list):
+    
+    ciclo_ativo = next((m for m in maquinas_status if m.get('is_my_reservation')), None)
+    st.subheader("Seu Ciclo de Lavagem:")
+    
+    if ciclo_ativo:
+        status = ciclo_ativo['status']
+        etapa = ciclo_ativo['etapa_ciclo']
+        progresso = ciclo_ativo['progresso'] / 100
+        tempo_restante = ciclo_ativo['tempo_restante']
+        codigo_maquina = ciclo_ativo['codigo_maquina']
+
+        st.info(f"✨ **Máquina {codigo_maquina}** está **{etapa}** (Status: {status})")
+        
+        # Display Progress Bar (RF3)
+        st.progress(progresso, text=f"**{int(progresso * 100)}% concluído**")
+        st.write(f"Tempo restante: **{tempo_restante}**")
+        
+        # Link rápido para editar a reserva (opcional)
+        if st.button("Gerenciar Minha Reserva", key="btn_gerenciar_ciclo"):
+             st.session_state["subpagina_morador"] = "minhas_reservas"
+             st.rerun()
+
+    else:
+        st.info("Você **não** está utilizando nenhuma máquina no momento ou seu ciclo já terminou.")
+        st.caption("Abaixo, você pode selecionar uma máquina livre para reservar.")
+
+
+def exibir_grid_maquinas(maquinas_status: list): #Exibe todas as máquinas e os status delas
+    
+    st.subheader("Todas as Máquinas da Lavanderia")
+    
+    # Criar um layout em colunas para uma melhor visualização (3 colunas por linha)
+    N_COLS = 3
+    cols = st.columns(N_COLS) 
+    
+    for i, maquina in enumerate(maquinas_status):
+        col = cols[i % N_COLS]
+        
+        with col:
+            # Usar st.container para dar um visual de 'card'
+            with st.container(border=True):
+                st.markdown(f"**{maquina['tipo_maquina']}** {maquina['codigo_maquina']}", 
+                            unsafe_allow_html=True)
+                
+                status = maquina['status']
+                
+                if status == "Livre" or "Livre" in status:
+                    st.success(f"✅ Status: **Livre**")
+                    # Opção de escolher/reservar (RF1)
+                    button_key = f"reserva_{maquina['id_maquina']}_{i}"
+                    if st.button("Reservar", key=button_key, use_container_width=True):
+                        st.session_state["subpagina_morador"] = "reserva" 
+                        st.session_state["maquina_selecionada_reserva"] = maquina['id_maquina']
+                        st.rerun()
+
+                elif status == "Em Uso":
+                    # Marca a reserva do próprio morador com um destaque
+                    if maquina['is_my_reservation']:
+                        st.warning("🌟 **Em Uso (Seu Ciclo)**")
+                        st.caption(f"Fim em: {maquina['tempo_restante']}")
+                    else:
+                        st.warning("🔴 **Em Uso**")
+                        st.caption(f"Fim em breve...")
+
+                elif status == "Em Manutenção":
+                    st.error("🔧 **Em Manutenção**")
+                    
+                else: # Outros status, como Agendada
+                    st.info(f"⏳ **{status}**")
+                    
+                st.caption(f"Capacidade: {maquina['capacidade']}")
+
+
 
 def tela_morador():
     # Verificação inicial de controladores
@@ -92,7 +167,8 @@ def tela_morador():
     st.title(f"👤 Área do Morador - {nome_lavanderia}")
     st.markdown("---")
     
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "🏠 Home",
         "📅 Visualizar Horários", 
         "⏰ Fazer Agendamento", 
         "📋 Minhas Reservas",
@@ -103,6 +179,22 @@ def tela_morador():
     # ------------------------------------------------------------------
     # TAB 1 - VISUALIZAR HORÁRIOS
     with tab1:
+        st.title("🧺 Dashboard da Lavanderia")
+        id_lavanderia = st.session_state.get("id_lavanderia")
+        id_usuario_logado = st.session_state.get("usuario_dados", {}).get("id_usuario")
+        try:
+            maquinas_status = controlador_maquina.obter_status_em_tempo_real(
+                id_lavanderia, id_usuario_logado
+            )
+        except Exception as e:
+            st.error(f"❌ Erro ao carregar status: {str(e)}")
+            maquinas_status = []
+
+        exibir_status_usuario_topo(maquinas_status)
+        st.markdown("---") # Separador visual
+        exibir_grid_maquinas(maquinas_status)
+       
+    with tab2:
         st.subheader("Horários Disponíveis")
         
         col1, col2 = st.columns(2)
@@ -151,7 +243,7 @@ def tela_morador():
     
     # ------------------------------------------------------------------
     # TAB 2 - FAZER AGENDAMENTO
-    with tab2:
+    with tab3:
         st.subheader("Fazer Agendamento")
         
         with st.form("agendamento_form"):
@@ -206,7 +298,7 @@ def tela_morador():
     
     # ------------------------------------------------------------------
     # TAB 3 - MINHAS RESERVAS
-    with tab3:
+    with tab4:
         st.subheader("📋 Minhas Reservas")
         
         hoje = datetime.now().date()
@@ -381,7 +473,7 @@ def tela_morador():
 
     # ------------------------------------------------------------------
     # TAB 4 - MEU PERFIL
-    with tab4:
+    with tab5:
         st.subheader("👤 Editar Informações do Perfil")
 
         usuario_logado = st.session_state.get("usuario_dados")
@@ -418,7 +510,7 @@ def tela_morador():
     
     # ------------------------------------------------------------------
     # TAB 5 - REPORTAR OCORRÊNCIA
-    with tab5:
+    with tab6:
         st.subheader("⚠️ Reportar uma Ocorrência")
         st.write("Encontrou algo que não está funcionando? Nos avise.")
 

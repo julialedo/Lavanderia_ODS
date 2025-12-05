@@ -1,10 +1,11 @@
 # Model - maquina.py
 # Responsável pela persistência (consultas SQL), mapeamento simples entre linha do banco ↔ objeto Python e todas as operações CRUD com o MySQL.
 # É onde cuidamos da integridade dos dados e do uso do conector (conexao_bd.conectar()). 
-# Aqui entra regras de negócio do tipo "regra de domínio", que descrevem o comportamento do mundo real (ex: uma maquina nao pode ser reservadas por dois ao mesmo tempo)
+# Aqui entra regras de negócio do tipo "regra de domínio", que descrevem o comportamento do mundo real (ex: uma maquina nao pode ser reservada por dois ao mesmo tempo)
 
 from dataclasses import dataclass   #cria um "molde" para a classe (com init, repr)
-from typing import Optional, List
+from typing import Optional, List, Dict
+from datetime import datetime
 from banco_de_dados.conexao_bd import conectar
 
 @dataclass
@@ -17,11 +18,11 @@ class Maquina:
     capacidade: str
 
 
-# Cadastrar Máquina no Banco:
+#Cadastrar Máquina no Banco:
 def criar_maquina(maquina: Maquina) -> int:
 
     #gera o comando sql de Insert (a query), não coloquei id.maquina porque esta com autoincrement no banco:    
-    sql = " INSERT INTO maquina (id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade) VALUES (%s, %s, %s, %s, %s)"
+    sql = "INSERT INTO maquina (id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade) VALUES (%s, %s, %s, %s, %s)"
     conn = conectar()  #chama a função conectar para abrir a conexão com o banco
     try:
         cur = conn.cursor()  #abre o cursor
@@ -34,8 +35,8 @@ def criar_maquina(maquina: Maquina) -> int:
         conn.close()  #fecha a conexão
 
 
-# Atualizar Máquina no Banco:
-def atualizar_maquina(id_maquina: int, campos: dict) -> bool:   #campos: dicionario com colunas e dados a atualizar
+#Atualizar Máquina no Banco:
+def atualizar_maquina(id_maquina: int, campos: dict) -> bool:   #campos = dicionario com colunas e dados a atualizar
     
     set_clause = ", ".join(f"{k} = %s" for k in campos.keys())  #organiza os campos em uma "string" set_clause
     params = list(campos.values()) + [id_maquina]  #orgazina os parametros
@@ -53,7 +54,7 @@ def atualizar_maquina(id_maquina: int, campos: dict) -> bool:   #campos: diciona
         conn.close() #fecha a conexão
 
 
-# Deletar Máquinas no Banco:
+#Deletar Máquinas no Banco:
 def deletar_maquina(id_maquina: int) -> bool:
     
     sql = "DELETE FROM maquina WHERE id_maquina = %s" #comando sql delete
@@ -69,7 +70,7 @@ def deletar_maquina(id_maquina: int) -> bool:
         conn.close() #fecha a conexão
 
 
-# Listar Máquinas por lavanderia:
+#Listar Máquinas por lavanderia:
 def listar_maquinas_por_lavanderia(id_lavanderia: int) -> List[Maquina]:
    
     sql = "SELECT id_maquina, id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade FROM maquina WHERE id_lavanderia = %s" #comando sql select
@@ -86,7 +87,7 @@ def listar_maquinas_por_lavanderia(id_lavanderia: int) -> List[Maquina]:
         conn.close() #fecha a conexão
 
 
-# Acessar uma Máquina especifica pelo id dela:
+#Acessar uma Máquina especifica pelo id dela:
 def obter_maquina_por_id(id_maquina: int) -> Optional[Maquina]:
     
     sql = "SELECT id_maquina, id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade FROM maquina WHERE id_maquina = %s" #comando sql select
@@ -101,3 +102,31 @@ def obter_maquina_por_id(id_maquina: int) -> Optional[Maquina]:
         return None
     finally:
         conn.close()  #fecha a conexão
+
+
+#Retorna o status da maquina e os dados da reserva se houver, faz um LEFT JOIN
+def obter_status_e_reserva_ativa(id_lavanderia: int) -> List[Dict]:
+    
+    sql = """ SELECT m.id_maquina, m.codigo_maquina, m.tipo_maquina, m.status_maquina, m.capacidade, r.id_reserva, r.id_usuario, r.data_reserva, r.hora_inicio, r.hora_fim
+        FROM maquina m 
+        LEFT JOIN reservas r 
+        ON m.id_maquina = r.id_maquina 
+        AND r.status_reserva = 'ativa' 
+        AND r.data_reserva = DATE(NOW())
+        WHERE m.id_lavanderia = %s
+        ORDER BY m.codigo_maquina;
+    """
+    conn = conectar() #abre conexão
+    data = []
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(sql, (id_lavanderia,)) #executa o comando
+        data = cur.fetchall()
+        cur.close()
+        return data #retorna a lista de dicionários com dados combinados
+    except Exception as e:
+        print(f"❌ Erro ao buscar status/reserva: {e}")
+        return []
+    finally:
+        conn.close()
+

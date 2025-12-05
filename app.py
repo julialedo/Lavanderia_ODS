@@ -8,8 +8,8 @@ from visao.tela_adm_predio import tela_adm_predio
 from visao.tela_adm_plataforma import tela_adm_plataforma
 
 
-#Header que irá aparecer no início da tela
-def header_global():
+# Header que irá aparecer no início da tela de login/cadastro:
+def header():
     st.markdown("""
     <style>
         .block-container {
@@ -28,28 +28,34 @@ def header_global():
         """,
         unsafe_allow_html=True
     )
-    
-
-def go_to_home():
-    st.session_state.page = "home"
 
 
-#Execução Principal:
+# Execução Principal:
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
+    st.session_state["dados_carregados"] = False
 
-header_global()
-if not st.session_state["logado"]:
+if not st.session_state["logado"]:    
+    #se não tiver logado:
+    header()
     tela_login()
-else:
-    # 🔥 ADICIONAR: Carregar ID da lavanderia se não estiver na session
-    if "id_lavanderia" not in st.session_state and "id_usuario" in st.session_state:
-        from controladores.controlador_usuario import ControladorUsuario
-        controlador_usuario = ControladorUsuario()
-        id_lavanderia = controlador_usuario.obter_lavanderia_usuario(st.session_state["id_usuario"])
-        if id_lavanderia:
-            st.session_state["id_lavanderia"] = id_lavanderia
-    
+
+else:   
+    #se tiver logado:
+    if st.session_state["dados_carregados"] is False and "id_usuario" in st.session_state:
+        try:
+            from controladores.controlador_usuario import ControladorUsuario
+            controlador_usuario = ControladorUsuario()
+            
+            lista_ids = controlador_usuario.obter_lavanderias_usuario(st.session_state["id_usuario"])
+            
+            if lista_ids:
+                st.session_state["lista_ids_lavanderia"] = lista_ids
+        
+            st.session_state["dados_carregados"] = True     
+        except Exception as e:
+            st.error(f"Erro ao carregar associações de lavanderia: {e}")
+
     if st.session_state.pagina == "tela_adm_plataforma":
         tela_adm_plataforma()
     elif st.session_state.pagina == "tela_adm_predio":

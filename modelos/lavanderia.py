@@ -14,13 +14,12 @@ class Lavanderia:
     nome: str
     endereco: str
     data_cadastro_lav: Optional[str]
-    qtd_maquinas: Optional[int]
 
 
 # Cadastrar Lavanderia:
 def criar_lavanderia(lav: Lavanderia) -> int:
     
-    sql = "INSERT INTO lavanderia (id_adm_predio, nome, endereco, data_cadastro_lav, qtd_maquinas) VALUES (%s, %s, %s, NOW(), 0)" #comando sql
+    sql = "INSERT INTO lavanderia (id_adm_predio, nome, endereco, data_cadastro_lav) VALUES (%s, %s, %s, NOW())" #comando sql
     conn = conectar()  #abre a conexão
     try:
         cur = conn.cursor()
@@ -33,10 +32,10 @@ def criar_lavanderia(lav: Lavanderia) -> int:
         conn.close()  #fecha a conexão
 
 
-# Listar Lavanderias:
+# Listar Lavanderias: OK
 def listar_lavanderias() -> List[Lavanderia]:
     
-    sql = "SELECT id_lavanderia, id_adm_predio, nome, endereco, data_cadastro_lav, qtd_maquinas FROM lavanderia" #comando sql
+    sql = "SELECT id_lavanderia, id_adm_predio, nome, endereco, data_cadastro_lav FROM lavanderia" #comando sql
     conn = conectar() #abre a conexão
     lavanderias = []
     try:
