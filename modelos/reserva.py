@@ -190,3 +190,32 @@ def obter_reservas_por_lavanderia_e_periodo(id_lavanderia: int, data_inicial: st
         return reservas
     finally:
         conn.close()
+
+def listar_reservas_futuras_por_lavanderia(id_lavanderia: int) -> List[Reserva]:
+    """
+    Busca todas as reservas ativas ou agendadas (no futuro) de uma lavanderia,
+    garantindo que o status seja 'ativa' ou 'agendada'.
+    """
+    
+    # Busca reservas cuja data_reserva é hoje ou no futuro E status_reserva é 'ativa' ou 'agendada'
+    sql = """
+        SELECT 
+            r.* FROM reservas r
+        JOIN maquina m ON r.id_maquina = m.id_maquina
+        WHERE m.id_lavanderia = %s 
+          AND r.status_reserva IN ('ativa', 'agendada')
+        ORDER BY r.data_reserva, r.hora_inicio
+    """
+    conn = conectar()
+    reservas = []
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_lavanderia,))
+        for row in cur.fetchall():
+            # Assumindo que a conversão de row para objeto Reserva acontece aqui.
+            row_list = list(row)
+            reservas.append(Reserva(*row_list)) # Certifique-se que a conversão de tipo (timedelta/string) está correta aqui
+        cur.close()
+        return reservas
+    finally:
+        conn.close()

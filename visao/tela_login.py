@@ -1,18 +1,22 @@
 # View - tela_login.py
+# Interface em Streamlit, recebe o input do usuário e chama o controller.
+
 import streamlit as st 
 
-# Controladores inicializados uma vez
+
+# Controladores inicializados uma vez:
 try:
     from controladores.controlador_usuario import ControladorUsuario
     controlador_usuario = ControladorUsuario()
 except ImportError:
     controlador_usuario = None
 
+
+# Tela de login: OK
 def tela_login():
-    # Inicialização simplificada
+
     if "mostrar_cadastro" not in st.session_state:
         st.session_state.mostrar_cadastro = False
-    
     if st.session_state.mostrar_cadastro:
         try:
             from visao.tela_cadastro import tela_cadastro
@@ -31,7 +35,6 @@ def tela_login():
     st.markdown("---")
 
     col1, col2 = st.columns([2, 1])
-    
     with col1:
         email = st.text_input("E-mail")
         senha = st.text_input("Senha", type="password")
@@ -40,21 +43,31 @@ def tela_login():
             if not controlador_usuario:
                 st.error("Sistema temporariamente indisponível")
                 return
-                
             try:
                 usuario = controlador_usuario.login(email, senha)
-
                 st.session_state.update({
                     "logado": True,
                     "usuario": usuario["nome"],
                     "usuario_dados": usuario,
                     "tipo": usuario["tipo_usuario"],
-                    "id_lavanderia": usuario.get("id_lavanderia")
                 })
+
+                if usuario["tipo_usuario"] == "adm_predio":
+                    lista_ids = controlador_usuario.obter_lavanderias_usuario(usuario["id_usuario"])
+                    
+                    st.session_state["lista_ids_lavanderia"] = lista_ids
+                    
+                    if lista_ids:
+                        st.session_state["id_lavanderia_ativa"] = lista_ids[0]
+                    else:
+                        st.session_state["id_lavanderia_ativa"] = None
+                elif usuario["tipo_usuario"] == "morador":
+                       lista_ids = controlador_usuario.obter_lavanderias_usuario(usuario["id_usuario"])
+                       st.session_state["id_lavanderia"] = lista_ids[0] if lista_ids else None
 
                 st.success(f"Bem-vindo, {usuario['nome']}!")
 
-                # Determinar página baseada no tipo de usuário
+                # Determinar página baseada no tipo de usuário:
                 paginas = {
                     "adm_plataforma": "tela_adm_plataforma",
                     "adm_predio": "tela_adm_predio"
@@ -62,7 +75,6 @@ def tela_login():
                 st.session_state["pagina"] = paginas.get(
                     usuario["tipo_usuario"], "tela_morador"
                 )
-
                 st.rerun()
 
             except Exception as e:
@@ -73,6 +85,6 @@ def tela_login():
         st.subheader("Novo por aqui?")
         st.write("Cadastre-se como morador")
         
-        if st.button("📝 Criar Conta", use_container_width=True):
+        if st.button("Criar Conta", use_container_width=True):
             st.session_state.mostrar_cadastro = True
             st.rerun()

@@ -5,17 +5,16 @@ from typing import Optional, Tuple
 from modelos.lavanderia import listar_lavanderias
 from modelos.usuario import (
     autenticar_usuario, editar_usuario, criar_morador, 
-    verificar_email_existente, listar_moradores_pendentes_por_lavanderia,
+    verificar_email_existente, listar_moradores_pendentes_lavanderia,
     aprovar_conta_morador, rejeitar_conta_morador, criar_administrador_predio,
-    contar_usuarios, obter_usuario_por_id, obter_lavanderia_usuario_db
+    contar_usuarios, obter_usuario_por_id, obter_lavanderias_por_usuario
 )
 import re
 
 class ControladorUsuario:
     
-    # AUTENTICAR LOGIN
+    # Auntenticar Login: OK
     def login(self, email: str, senha: str) -> dict:
-        """Autentica usuário no sistema"""
         if not email or not senha:  
             raise ValueError("Email e senha são obrigatórios!")   
 
@@ -24,11 +23,12 @@ class ControladorUsuario:
         if not usuario:    
             raise ValueError("Usuário não encontrado! Verifique o e-mail e a senha.")
         if usuario["status_conta"] != "ativa":   
-            raise ValueError("Conta inativa. Contate o administrador.")
+            raise ValueError("Conta inativa. Contate o administrador do seu prédio.")
         
         return usuario
 
-    # EDITAR PERFIL
+
+    # Editar Perfi:
     def editar_perfil(self, id_usuario: int, nome: str, email: str, telefone: str, 
                      senha_atual: str, nova_senha: Optional[str] = None) -> bool:
         """Edita perfil do usuário"""
@@ -55,7 +55,19 @@ class ControladorUsuario:
         return True
 
 
-    # CADASTRAR MORADOR
+    # Validação de Email: OK
+    def validar_email(self, email: str) -> bool:
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return re.match(pattern, email) is not None
+
+
+    # Validação de Telefone: OK
+    def validar_telefone(self, telefone: str) -> bool:
+        padrao = r'^(\+55\s?)?(\(?\d{2}\)?\s?)?\d{4,5}-?\d{4}$'
+        return re.match(padrao, telefone) is not None
+     
+
+    # Cadastrar Morador que se inscreveu: OK
     def cadastrar_morador(self, nome: str, email: str, senha: str, telefone: str, id_lavanderia: int) -> Tuple[bool, str]:
         try:
             # Validações de campos obrigatórios:
@@ -79,7 +91,7 @@ class ControladorUsuario:
                 raise ValueError("A senha deve ter pelo menos 6 caracteres")
             
             # Verificar se email já existe:
-            if verificar_email_existente(email):
+            if verificar_email_existente((email,)):
                 raise ValueError("Email já cadastrado no sistema")
             
             # Criar morador (status 'inativa')
@@ -91,26 +103,9 @@ class ControladorUsuario:
             return False, str(e)
 
 
-    # Validação de Email:
-    def validar_email(self, email: str) -> bool:
-        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        return re.match(pattern, email) is not None
-
-
-    # Validação de Telefone:
-    def validar_telefone(self, telefone: str) -> bool:
-        padrao = r'^(\+55\s?)?(\(?\d{2}\)?\s?)?\d{4,5}-?\d{4}$'
-        return re.match(padrao, telefone) is not None
-    
-    # Listar lavanderias cadastradas:
-    def listar_lavanderias(self):
-        return listar_lavanderias()
-    
-
-    # CRIAR ADMINISTRADOR DO PRÉDIO
+    # Cadastrar novo adm_predio: OK+-
     def criar_administrador_predio(self, nome: str, email: str, senha: str, 
                                   telefone: str, id_lavanderia: int) -> Tuple[bool, str]:
-        """Cria novo administrador do prédio"""
         try:
             if not all([nome, email, senha, telefone]):
                 raise ValueError("Todos os campos são obrigatórios!")
@@ -131,17 +126,17 @@ class ControladorUsuario:
         except Exception as e:
             return False, str(e)
 
-    # LISTAR MORADORES PENDENTES
+
+    # Listar moradores pendentes (para serem aceitos na lavanderia pelo adm): OK
     def listar_moradores_pendentes(self, id_lavanderia: int) -> list:
-        """Lista moradores aguardando aprovação"""
         try:
-            return listar_moradores_pendentes_por_lavanderia(id_lavanderia)
+            return listar_moradores_pendentes_lavanderia(id_lavanderia)
         except Exception as e:
             raise ValueError(f"Erro ao listar moradores pendentes: {str(e)}")
 
-    # APROVAR MORADOR
+
+    # Aprovar moradores: OK
     def aprovar_morador(self, id_usuario: int) -> bool:
-        """Aprova conta de morador"""
         try:
             sucesso = aprovar_conta_morador(id_usuario)
             if not sucesso:
@@ -150,9 +145,9 @@ class ControladorUsuario:
         except Exception as e:
             raise ValueError(f"Erro ao aprovar morador: {str(e)}")
 
-    # REJEITAR MORADOR
+
+    # Rejeitar moradores: OK
     def rejeitar_morador(self, id_usuario: int) -> bool:
-        """Rejeita conta de morador"""
         try:
             sucesso = rejeitar_conta_morador(id_usuario)
             if not sucesso:
@@ -161,39 +156,52 @@ class ControladorUsuario:
         except Exception as e:
             raise ValueError(f"Erro ao rejeitar morador: {str(e)}")
 
-    # CONTAR USUÁRIOS
+
+    # Contar total de usuarios no sistema: OK
     def contar_usuarios(self) -> int:
-        """Retorna o total de usuários no sistema"""
         try:
             return contar_usuarios()
         except Exception as e:
             raise ValueError(f"Erro ao contar usuários: {str(e)}")
 
     
-    
-    # BUSCAR USUÁRIO POR EMAIL
-    def buscar_usuario_por_email(self, email: str) -> Optional[dict]:
-        """Busca usuário por email"""
-        try:
-            # Esta função precisaria ser implementada no modelo
-            # Por enquanto retornamos None
-            return None
-        except Exception as e:
-            raise ValueError(f"Erro ao buscar usuário: {str(e)}")
-
-    # OBTER USUÁRIO POR ID
+    # Buscar usuario por ID: OK
     def obter_usuario_por_id(self, usuario_id: int) -> Optional[dict]:
-        """Obtém dados completos do usuário por ID"""
         try:
             return obter_usuario_por_id(usuario_id)
         except Exception as e:
             raise ValueError(f"Erro ao buscar usuário: {str(e)}")
 
-    # OBTER LAVANDERIA DO USUÁRIO
-    def obter_lavanderia_usuario(self, usuario_id: int) -> Optional[int]:
-        """Obtém o ID da lavanderia associada ao usuário"""
+
+    # ATENÇÃOBuscar usuario por email:
+    def buscar_usuario_por_email(self, email: str) -> Optional[dict]:
         try:
-            return obter_lavanderia_usuario_db(usuario_id)
-        except Exception as e:
-            print(f"Erro ao obter lavanderia do usuário: {e}")
+            # ATENÇÃO!!!! Esta função precisaria ser implementada no modelo
+            # Por enquanto retornamos None
             return None
+        except Exception as e:
+            raise ValueError(f"Erro ao buscar usuário: {str(e)}")
+
+
+    # Listar lavanderias cadastradas: OK
+    def listar_lavanderias(self):
+        return listar_lavanderias()
+    
+
+    # Obter lavanderias por usuario:
+    def obter_lavanderias_usuario(self, id_usuario: int) -> list:
+
+        if not id_usuario or not isinstance(id_usuario, int):
+            # Validação básica de entrada
+            print("⚠️ ID de usuário não fornecido.")
+            return []
+            
+        try:
+            lista_ids = obter_lavanderias_por_usuario(id_usuario)            
+            if not lista_ids:
+                print(f"Usuário ID {id_usuario} não está associado a nenhuma lavanderia.")
+            return lista_ids
+            
+        except Exception as e:
+            print(f"❌ Erro no controlador ao buscar lavanderias: {e}")
+            return []
