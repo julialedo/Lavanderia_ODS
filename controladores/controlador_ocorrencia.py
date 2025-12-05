@@ -6,7 +6,7 @@ from modelos.ocorrencia import (
     listar_ocorrencias_por_lavanderia_db    
 )
 from modelos.notificacao import notificar_nova_ocorrencia 
-from modelos.usuario import obter_id_adm_por_lavanderia
+
 
 class ControladorOcorrencia:
     
