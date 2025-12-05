@@ -1,25 +1,31 @@
 # View - tela_cadastro.py
+# Interface em Streamlit, recebe o input do usuário e chama o controller.
+
 import streamlit as st
 
-# Controlador inicializado uma única vez (se possível mover para session_state)
+
+# Controlador inicializado uma única vez:
 try:
     from controladores.controlador_usuario import ControladorUsuario
     controlador_usuario = ControladorUsuario()
 except ImportError:
     controlador_usuario = None
 
+
+# Tela para morador se cadastrar:
 def tela_cadastro():
     st.title("📝 Cadastro de Morador")
-    st.info("Preencha os dados abaixo para se cadastrar no sistema de lavanderia")
+    st.info("Preencha os dados abaixo para se cadastrar no sistema de Lavanderias Coletivas.")
     
-    # Cache da lista de lavanderias
+    # Cache da lista de lavanderias:
     if 'lavanderias_cache' not in st.session_state:
         try:
             lavanderias = controlador_usuario.listar_lavanderias()
             st.session_state.lavanderias_cache = {
                 lav.nome: lav.id_lavanderia for lav in lavanderias
             }
-        except:
+        except Exception as e:
+            st.error(f"Não foi possível carregar a lista de lavanderias. Detalhes: {e}")
             st.session_state.lavanderias_cache = {}
     
     opcoes = st.session_state.lavanderias_cache
@@ -43,13 +49,13 @@ def tela_cadastro():
             "Lavanderia*",
             options=list(opcoes.keys()),
             index=None,
-            placeholder="Selecione uma opção"
+            placeholder="Selecione uma opção."
         )
         id_lavanderia = opcoes.get(lavanderia_nome)
         
-        st.caption(" *Campos obrigatórios")
+        st.caption(" *Campos obrigatórios.")
         
-        if st.form_submit_button("📝 Cadastrar", use_container_width=True):
+        if st.form_submit_button("Cadastrar", use_container_width=True):
             if not controlador_usuario:
                 st.error("Sistema temporariamente indisponível")
                 return
