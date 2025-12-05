@@ -28,6 +28,36 @@ except ImportError as e:
     controlador_ocorrencia = None
     controlador_manutencao = None
 
+
+if "id_lavanderia_ativa" not in st.session_state and st.session_state.get("lista_ids_lavanderia"):
+    st.session_state["id_lavanderia_ativa"] = st.session_state["lista_ids_lavanderia"][0]  #para armazenar a lavanderia que ele esta, abre a tela com a primeira
+
+
+# Pega os nomes de todas as lavanderias associadas aquele adm, e utiliza cache:
+def get_all_lavanderias_info(lista_ids_lavanderia):
+    if not lista_ids_lavanderia:
+        return {}
+    
+    cache_key = "all_lavanderias_info"
+    if cache_key not in st.session_state:
+        lavanderias_info = {}
+        try:
+            from controladores.controlador_plataforma import ControladorPlataforma
+            controlador_plataforma = ControladorPlataforma()
+            
+            for id_lav in lista_ids_lavanderia:
+                info = controlador_plataforma.obter_lavanderia_por_id(id_lav)
+                if info:
+                    lavanderias_info[info['nome']] = id_lav # Mapeia Nome -> ID
+                    
+            st.session_state[cache_key] = lavanderias_info
+        except Exception as e:
+            print(f"Erro ao carregar lista de lavanderias para o admin: {e}")             # Em caso de erro, retorna dicionário vazio
+            st.session_state[cache_key] = {}
+
+    return st.session_state[cache_key]
+
+
 # Cache para dados frequentemente acessados
 def get_lavanderia_nome(id_lavanderia):
     """Cache do nome da lavanderia"""
@@ -80,6 +110,7 @@ def get_moradores_pendentes_cache(id_lavanderia):
             st.session_state[cache_key] = []
     return st.session_state[cache_key]
 
+
 def clear_moradores_cache(id_lavanderia):
     """Limpa cache de moradores"""
     if id_lavanderia:
@@ -113,9 +144,9 @@ def aprovar_moradores():
     st.subheader("👥 Aprovar Moradores Cadastrados")
     st.markdown("---")
 
-    id_lavanderia_admin = st.session_state.get("id_lavanderia")
+    id_lavanderia_admin = st.session_state.get("id_lavanderia_ativa")
     if not id_lavanderia_admin:
-        st.error("❌ ID da lavanderia não encontrado.")
+        st.error("❌ ID da lavanderia ativa não encontrado.")
         return
 
     st.info("Aqui você pode aprovar ou rejeitar cadastros de novos moradores.")
@@ -191,7 +222,7 @@ def gerenciar_maquinas():
         editar_maquina_screen()
         return
 
-    id_lavanderia = st.session_state.get("id_lavanderia")
+    id_lavanderia = st.session_state.get("id_lavanderia_ativa")
     if not id_lavanderia:
         st.error("❌ ID da lavanderia não encontrado.")
         return
@@ -360,7 +391,7 @@ def editar_maquina_screen():
                     ok = controlador_maquina.editar_maquina(maq_id, campos)
                     if ok:
                         st.success("✅ Máquina atualizada com sucesso!")
-                        clear_maquinas_cache(st.session_state.get("id_lavanderia"))
+                        clear_maquinas_cache(st.session_state.get("id_lavanderia_ativa"))
                         del st.session_state["editar_maquina"]
                         st.rerun()
                     else:
@@ -386,7 +417,7 @@ def gerenciar_manutencoes():
     st.subheader("🔧 Gerenciamento de Manutenções")
     st.markdown("---")
 
-    id_lavanderia = st.session_state.get("id_lavanderia")
+    id_lavanderia = st.session_state.get("id_lavanderia_ativa")
     if not id_lavanderia:
         st.error("❌ ID da lavanderia não encontrado.")
         return
@@ -606,7 +637,7 @@ def abrir_relatorios():
     st.title("📊 Relatórios de Uso da Lavanderia")
     st.markdown("---")
 
-    id_lavanderia = st.session_state.get("id_lavanderia")
+    id_lavanderia = st.session_state.get("id_lavanderia_ativa")
     if not id_lavanderia:
         st.error("❌ ID da lavanderia não encontrado. Faça login novamente.")
         return
@@ -734,7 +765,7 @@ def visualizar_ocorrencias():
     st.subheader("⚠️ Gerenciamento de Ocorrências")
     st.markdown("---")
     
-    id_lavanderia_admin = st.session_state.get("id_lavanderia")
+    id_lavanderia_admin = st.session_state.get("id_lavanderia_ativa")
     if not id_lavanderia_admin:
         st.error("❌ ID da lavanderia do admin não encontrado na sessão.")
         st.markdown("---")
@@ -879,6 +910,8 @@ def editar_perfil():
         st.session_state.subpagina_adm_predio = None
         st.rerun()
 
+
+
 # Tela inicial do Administrador do Prédio:
 def tela_adm_predio():
     # Verificação inicial do sistema
@@ -887,6 +920,16 @@ def tela_adm_predio():
         if st.button("🔄 Recarregar"):
             st.rerun()
         return
+
+    lista_ids = st.session_state.get("lista_ids_lavanderia", [])
+    id_lavanderia_ativa = st.session_state.get("id_lavanderia_ativa")
+
+    st.sidebar.warning(f"IDs na Sessão: {lista_ids}")
+    st.sidebar.warning(f"ID Ativo: {id_lavanderia_ativa}")
+    
+    # Obter nomes das lavanderias para o seletor
+    lavanderias_info = get_all_lavanderias_info(lista_ids)
+    nomes_lavanderias = list(lavanderias_info.keys()) # Lista dos nomes
 
     st.title("👨‍💼 Área do Administrador do Prédio")
     st.markdown("---")
@@ -900,10 +943,41 @@ def tela_adm_predio():
         if "usuario" in st.session_state:
             st.write(f"👤 Usuário: {st.session_state['usuario']}")
 
-        id_lavanderia = st.session_state.get("id_lavanderia")
-        nome_lavanderia = get_lavanderia_nome(id_lavanderia)
-        st.write(f"🏢 Lavanderia: {nome_lavanderia}")
+        if len(nomes_lavanderias) > 0 and id_lavanderia_ativa:
+            st.markdown("---")
+            st.subheader("Selecione a Lavanderia")
+            
+            # Garante que a lavanderia ativa atual seja o valor inicial
+            nome_lav_ativa_atual = get_lavanderia_nome(id_lavanderia_ativa)
+            try:
+                index_selecionado = nomes_lavanderias.index(nome_lav_ativa_atual)
+            except ValueError:
+                index_selecionado = 0 # Fallback
 
+            lavanderia_selecionada = st.selectbox(
+                "Lavanderias Associadas", 
+                options=nomes_lavanderias, 
+                index=index_selecionado,
+                key="seletor_lavanderia_adm_predio"
+            )
+            
+            # Verifica e atualiza o ID ativo
+            novo_id_ativo = lavanderias_info.get(lavanderia_selecionada)
+            
+            # Se o ID do seletor mudou, atualiza a sessão e recarrega
+            if novo_id_ativo != id_lavanderia_ativa and novo_id_ativo is not None:
+                st.session_state["id_lavanderia_ativa"] = novo_id_ativo
+                # Não precisa limpar o cache aqui, mas o rerunning irá forçar as funções a usarem o novo ID
+                st.rerun() 
+            
+            id_lavanderia_ativa = novo_id_ativo # Atualiza o contexto local
+
+        if not id_lavanderia_ativa:
+            st.error("❌ Administrador não associado a nenhuma lavanderia.")
+            return
+        
+        nome_lavanderia_ativa = get_lavanderia_nome(id_lavanderia_ativa) # <--- NOVO/CORRIGIDO
+        
         st.markdown("---")
         st.subheader("🔄 Atualizar Cache")
         if st.button("Limpar Cache", help="Recarregar todos os dados em cache"):
@@ -918,7 +992,7 @@ def tela_adm_predio():
             st.rerun()
 
     # Cabeçalho principal
-    st.subheader(f"Lavanderia: **{nome_lavanderia}**")
+    st.subheader(f"Lavanderia: **{nome_lavanderia_ativa}**")
     st.markdown("---")
 
     # ----------------------------------------------------
@@ -955,7 +1029,7 @@ def tela_adm_predio():
 
         # Estatística rápida com cache
         try:
-            id_lavanderia = st.session_state.get("id_lavanderia")
+            id_lavanderia = st.session_state.get("id_lavanderia_ativa")
             if id_lavanderia:
                 moradores_pendentes = get_moradores_pendentes_cache(id_lavanderia)
                 st.info(f"**📊 Estatística:** {len(moradores_pendentes)} morador(es) aguardando aprovação")
@@ -972,7 +1046,7 @@ def tela_adm_predio():
         
         # Estatísticas rápidas
         try:
-            id_lavanderia = st.session_state.get("id_lavanderia")
+            id_lavanderia = st.session_state.get("id_lavanderia_ativa")
             if id_lavanderia:
                 maquinas = get_maquinas_lavanderia(id_lavanderia)
                 total = len(maquinas)
@@ -991,7 +1065,7 @@ def tela_adm_predio():
 
         # Estatística rápida de pendências
         try:
-            id_lavanderia = st.session_state.get("id_lavanderia")
+            id_lavanderia = st.session_state.get("id_lavanderia_ativa")
             if id_lavanderia and controlador_manutencao:
                 pendentes = controlador_manutencao.listar_manutencoes_pendentes(id_lavanderia)
                 st.info(f"**📊 Estatística:** {len(pendentes)} manutenção(ões) pendente(s)")
@@ -1015,7 +1089,7 @@ def tela_adm_predio():
         
         # Estatística rápida
         try:
-            id_lavanderia = st.session_state.get("id_lavanderia")
+            id_lavanderia = st.session_state.get("id_lavanderia_ativa")
             if id_lavanderia:
                 ocorrencias = get_ocorrencias_cache(id_lavanderia)
                 st.info(f"**📊 Estatística:** {len(ocorrencias)} ocorrência(s) em aberto")
