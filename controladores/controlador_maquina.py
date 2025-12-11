@@ -40,7 +40,7 @@ class ControladorMaquina:
         return deletar_maquina(id_maquina) #Chama deletar maquina do modelo
 
 
-    #Listar Máquinas por lavanderia:
+    # Listar Máquinas por lavanderia: OK
     def listar_por_lavanderia(self, id_lavanderia: int):
         return listar_maquinas_por_lavanderia(id_lavanderia)
 

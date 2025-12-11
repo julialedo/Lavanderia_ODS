@@ -4,15 +4,17 @@
 import streamlit as st 
 
 
-# Controladores inicializados uma vez:
-try:
-    from controladores.controlador_usuario import ControladorUsuario
-    controlador_usuario = ControladorUsuario()
-except ImportError as e:
-    # 👈 ESTA LINHA REVELARÁ O PROBLEMA
-    # A mensagem será algo como: cannot import name 'X' from 'Y'
-    st.error(f"❌ Erro Crítico: Falha ao carregar ControladorUsuario. Detalhes: {e}")
-    controlador_usuario = None
+# Controlador inicializado e armazenado uma unica vez com cache:
+@st.cache_resource
+def get_controlador_usuario():
+    try:
+        from controladores.controlador_usuario import ControladorUsuario
+        return ControladorUsuario()
+    except ImportError as e:
+        st.error(f"❌ Erro Crítico: Falha ao carregar ControladorUsuario na Tela de Login. Detalhes: {e}")
+        return None
+
+controlador_usuario = get_controlador_usuario()
 
 
 # Tela de login: OK
@@ -33,8 +35,9 @@ def tela_login():
             st.session_state.mostrar_cadastro = False
             st.rerun()
     
-    # Seção de Login
-    st.title("🔐 Login - Sistema de Lavanderia")
+
+    # Seção de Login:
+    st.title("🔐 Login - Sistema de Lavanderias")
     st.markdown("---")
 
     col1, col2 = st.columns([2, 1])
@@ -86,7 +89,7 @@ def tela_login():
     with col2:
         st.markdown("---")
         st.subheader("Novo por aqui?")
-        st.write("Cadastre-se como morador")
+        st.write("Cadastre-se como morador.")
         
         if st.button("Criar Conta", use_container_width=True):
             st.session_state.mostrar_cadastro = True
