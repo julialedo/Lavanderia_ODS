@@ -3,23 +3,30 @@
 
 import streamlit as st 
 
+# --- CONTROLADORES: INICIALIZAÇÃO ÚNICA COM CACHE ---
+@st.cache_resource
+def get_controlador_usuario():
+    """Inicializa e armazena o ControladorUsuario uma única vez."""
+    try:
+        from controladores.controlador_usuario import ControladorUsuario
+        return ControladorUsuario()
+    except ImportError as e:
+        # st.error(f"❌ Erro Crítico: Falha ao carregar ControladorUsuario. Detalhes: {e}")
+        return None
 
-# Controladores inicializados uma vez:
-try:
-    from controladores.controlador_usuario import ControladorUsuario
-    controlador_usuario = ControladorUsuario()
-except ImportError as e:
-    # 👈 ESTA LINHA REVELARÁ O PROBLEMA
-    # A mensagem será algo como: cannot import name 'X' from 'Y'
-    st.error(f"❌ Erro Crítico: Falha ao carregar ControladorUsuario. Detalhes: {e}")
-    controlador_usuario = None
+controlador_usuario = get_controlador_usuario()
 
 
 # Tela de login: OK
 def tela_login():
+    
+    if not controlador_usuario:
+        st.error("❌ Sistema Crítico Indisponível. Tente novamente mais tarde.")
+        return
 
     if "mostrar_cadastro" not in st.session_state:
         st.session_state.mostrar_cadastro = False
+        
     if st.session_state.mostrar_cadastro:
         try:
             from visao.tela_cadastro import tela_cadastro
