@@ -4,12 +4,17 @@
 import streamlit as st
 
 
-# Controlador inicializado uma única vez:
-try:
-    from controladores.controlador_usuario import ControladorUsuario
-    controlador_usuario = ControladorUsuario()
-except ImportError:
-    controlador_usuario = None
+# Controlador inicializado e armazenado uma única vez:
+@st.cache_resource
+def get_controlador_usuario():
+    try:
+        from controladores.controlador_usuario import ControladorUsuario
+        return ControladorUsuario()
+    except ImportError as e:
+        st.error(f"❌ Erro Crítico: Falha ao carregar ControladorUsuario na Tela de Cadastro. Detalhes: {e}")
+        return None
+
+controlador_usuario = get_controlador_usuario()
 
 
 # Tela para morador se cadastrar:
@@ -75,7 +80,7 @@ def tela_cadastro():
             if sucesso:
                 st.success(mensagem)
                 st.balloons()
-                # Limpa cache após cadastro bem-sucedido
+                # Limpa cache após cadastro bem-sucedido:
                 if 'lavanderias_cache' in st.session_state:
                     del st.session_state.lavanderias_cache
             else:

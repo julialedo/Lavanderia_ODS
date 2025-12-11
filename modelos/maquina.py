@@ -70,7 +70,7 @@ def deletar_maquina(id_maquina: int) -> bool:
         conn.close() #fecha a conexão
 
 
-#Listar Máquinas por lavanderia:
+#Listar Máquinas por lavanderia: OK
 def listar_maquinas_por_lavanderia(id_lavanderia: int) -> List[Maquina]:
    
     sql = "SELECT id_maquina, id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade FROM maquina WHERE id_lavanderia = %s" #comando sql select

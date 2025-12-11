@@ -117,14 +117,16 @@ def criar_administrador_predio(nome: str, email: str, senha: str, telefone: str,
         conn.close() #fecha conexão
 
 
-# Listar moradores pendentes (para adm_predio): OK
+# Listar moradores pendentes por lavanderia: OK
 def listar_moradores_pendentes_lavanderia(id_lavanderia: int):
-
-    sql = "SELECT u.id_usuario, u.nome, u.email, u.telefone, u.data_cadastro_usuario FROM usuario u INER JOIN usuario_lavanderia ul ON u.id_usuario = ul.id_usuario WHERE u.tipo_usuario = 'morador' AND u.status_conta = 'inativa' AND ul.id_lavanderia = %s"
+    sql = ("SELECT u.id_usuario, u.nome, u.email, u.telefone, u.data_cadastro_usuario "
+           "FROM usuario u INNER JOIN usuario_lavanderia ul ON u.id_usuario = ul.id_usuario "
+           "WHERE u.tipo_usuario = 'morador' AND u.status_conta = 'inativa' AND ul.id_lavanderia = %s")
     conn = conectar()
     try:
         cur = conn.cursor(dictionary=True)
-        cur.execute(sql, (id_lavanderia))
+        param = int(id_lavanderia)
+        cur.execute(sql, (param,))
         moradores = cur.fetchall()
         cur.close()
         return moradores
@@ -133,13 +135,13 @@ def listar_moradores_pendentes_lavanderia(id_lavanderia: int):
 
 
 # Aprovar conta de morador (para adm_predio): OK
-def aprovar_conta_morador(id_usuario: int, id_lavanderia: int):
+def aprovar_conta_morador(id_usuario: int):
 
     sql = "UPDATE usuario SET status_conta = 'ativa' WHERE id_usuario = %s AND tipo_usuario = 'morador'"
     conn = conectar()
     try:
         cur = conn.cursor()
-        cur.execute(sql, (id_usuario))
+        cur.execute(sql, (id_usuario,))
         rows_affected = cur.rowcount
         conn.commit()
         cur.close()
@@ -155,7 +157,7 @@ def rejeitar_conta_morador(id_usuario: int):
     conn = conectar()
     try:
         cur = conn.cursor()
-        cur.execute(sql, (id_usuario))
+        cur.execute(sql, (id_usuario,))
         conn.commit()
         rows_affected = cur.rowcount
         cur.close()

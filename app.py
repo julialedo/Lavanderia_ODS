@@ -9,6 +9,7 @@ from visao.tela_notificacao_adm_predio import tela_notificacao_adm_predio
 from visao.tela_adm_plataforma import tela_adm_plataforma
 from visao.tela_notificacao_morador import tela_notificacao_morador
 
+
 # Header que irá aparecer no início da tela de login/cadastro:
 def header():
     st.markdown("""

@@ -3,7 +3,7 @@
 # Não faz acesso direto ao banco, chama funções do Model. Retorna resultados para a View.
 # Aqui entra as regras de negócio do tipo "regra de validação" que controla o fluxo da aplicação (ex: verificar se todos os campos obrigatórios foram preenchidos pelo usuario).
 
-from modelos.lavanderia import Lavanderia, criar_lavanderia, listar_lavanderias, contar_lavanderias, obter_lavanderia_por_id
+from modelos.lavanderia import Lavanderia, criar_lavanderia, listar_lavanderias, contar_lavanderias, retornar_lavanderia_por_id
 from modelos.usuario import criar_administrador_predio, contar_usuarios
 
 class ControladorPlataforma:
@@ -35,7 +35,7 @@ class ControladorPlataforma:
             "lavanderias": contar_lavanderias()
         }
 
-    # Obter lavanderia por ID
+
+    # Obter lavanderia por ID: OK
     def obter_lavanderia_por_id(self, lavanderia_id: int):
-        """Obtém dados de uma lavanderia específica"""
-        return obter_lavanderia_por_id(lavanderia_id)
+        return retornar_lavanderia_por_id(lavanderia_id)
