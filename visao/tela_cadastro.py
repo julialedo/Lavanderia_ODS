@@ -3,13 +3,18 @@
 
 import streamlit as st
 
+# --- CONTROLADORES: INICIALIZAÇÃO ÚNICA COM CACHE ---
+@st.cache_resource
+def get_controlador_usuario():
+    """Inicializa e armazena o ControladorUsuario uma única vez."""
+    try:
+        from controladores.controlador_usuario import ControladorUsuario
+        return ControladorUsuario()
+    except ImportError as e:
+        st.error(f"Erro ao carregar ControladorUsuario: {e}")
+        return None
 
-# Controlador inicializado uma única vez:
-try:
-    from controladores.controlador_usuario import ControladorUsuario
-    controlador_usuario = ControladorUsuario()
-except ImportError:
-    controlador_usuario = None
+controlador_usuario = get_controlador_usuario()
 
 
 # Tela para morador se cadastrar:
@@ -19,6 +24,11 @@ def tela_cadastro():
     
     # Cache da lista de lavanderias:
     if 'lavanderias_cache' not in st.session_state:
+        if not controlador_usuario:
+            st.error("Sistema indisponível para cadastro.")
+            st.session_state.lavanderias_cache = {}
+            return
+
         try:
             lavanderias = controlador_usuario.listar_lavanderias()
             st.session_state.lavanderias_cache = {
@@ -75,8 +85,8 @@ def tela_cadastro():
             if sucesso:
                 st.success(mensagem)
                 st.balloons()
-                # Limpa cache após cadastro bem-sucedido
+                # Otimizado: Limpa cache após cadastro bem-sucedido (para atualizar a lista na próxima vez)
                 if 'lavanderias_cache' in st.session_state:
                     del st.session_state.lavanderias_cache
             else:
-                st.error(f"Erro no cadastro: {mensagem}")   
+                st.error(f"Erro no cadastro: {mensagem}")
