@@ -3,19 +3,32 @@
 
 import streamlit as st
 
-# Controladores inicializados uma vez
-try:
-    from controladores.controlador_plataforma import ControladorPlataforma
-    from controladores.controlador_usuario import ControladorUsuario
-    controlador_plataforma = ControladorPlataforma()
-    controlador_usuario = ControladorUsuario()
-except ImportError:
+# --- CONTROLADORES: INICIALIZAÇÃO ÚNICA COM CACHE ---
+@st.cache_resource
+def get_controladores_plataforma():
+    """Inicializa e armazena controladores complexos uma única vez."""
+    try:
+        from controladores.controlador_plataforma import ControladorPlataforma
+        from controladores.controlador_usuario import ControladorUsuario
+        return {
+            "plataforma": ControladorPlataforma(),
+            "usuario": ControladorUsuario()
+        }
+    except ImportError as e:
+        st.error(f"Erro ao carregar controladores: {e}")
+        return None
+
+CONTROLADORES = get_controladores_plataforma()
+if CONTROLADORES:
+    controlador_plataforma = CONTROLADORES["plataforma"]
+    controlador_usuario = CONTROLADORES["usuario"]
+else:
     controlador_plataforma = None
     controlador_usuario = None
 
 # Cache para dados estáticos
 def get_lavanderias_cache():
-    """Cache otimizado para lista de lavanderias"""
+    """Cache otimizado para lista de lavanderias (usa st.session_state para fácil limpeza)"""
     if 'lavanderias_list' not in st.session_state:
         try:
             lavanderias = controlador_plataforma.listar_lavanderias() if controlador_plataforma else []
@@ -35,7 +48,7 @@ def clear_lavanderias_cache():
         del st.session_state.lavanderias_dict
 
 def get_estatisticas_cache():
-    """Cache para estatísticas"""
+    """Cache para estatísticas (usa st.session_state para fácil limpeza)"""
     if 'estatisticas_plataforma' not in st.session_state:
         try:
             stats = controlador_plataforma.obter_estatisticas() if controlador_plataforma else {}
@@ -93,10 +106,11 @@ def tela_adm_plataforma():
                 endereco = st.text_input("Endereço*", placeholder="Ex: Rua Principal, 123")
             
             with col2:
+                # Alterado para 0 para permitir opcional
                 id_adm_predio = st.number_input("ID do Administrador (opcional)", 
-                                              min_value=1, 
+                                              min_value=0, 
                                               step=1,
-                                              help="Deixe em branco se não houver administrador definido")
+                                              help="Deixe em branco/zero se não houver administrador definido")
             
             st.caption("* Campos obrigatórios")
             
@@ -148,7 +162,10 @@ def tela_adm_plataforma():
                         st.write(f"**🆔 ID:** {lav.id_lavanderia}")
                         
                     with col2:
-                        st.write(f"**🧺 Máquinas:** {lav.qtd_maquinas or 0}")
+                        # CORREÇÃO PARA AttributeError: Usa getattr para acessar o atributo de forma segura
+                        qtd_maquinas_valor = getattr(lav, 'qtd_maquinas', 0) 
+                        st.write(f"**🧺 Máquinas:** {qtd_maquinas_valor}") 
+                        
                         st.write(f"**👤 Admin (ID):** {lav.id_adm_predio or 'Não definido'}")
                     
                     # Ações rápidas
