@@ -6,138 +6,129 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-# Controladores inicializados UMA VEZ no topo
-try:
-    from controladores.controlador_maquina import ControladorMaquina
-    from controladores.controlador_reserva import ControladorReserva
-    from controladores.controlador_usuario import ControladorUsuario
-    from controladores.controlador_ocorrencia import ControladorOcorrencia
-    from controladores.controlador_manutencao import ControladorManutencao
-    
-    controlador_maquina = ControladorMaquina()
-    controlador_reserva = ControladorReserva()
-    controlador_usuario = ControladorUsuario()
-    controlador_ocorrencia = ControladorOcorrencia()
-    controlador_manutencao = ControladorManutencao()
-except ImportError as e:
-    # Fallback para evitar quebras
-    st.error(f"Erro ao carregar controladores: {e}")
+# --- CONTROLADORES: INICIALIZAÇÃO ÚNICA COM CACHE ---
+@st.cache_resource
+def get_controladores_adm_predio():
+    """Inicializa e armazena controladores complexos uma única vez."""
+    try:
+        from controladores.controlador_maquina import ControladorMaquina
+        from controladores.controlador_reserva import ControladorReserva
+        from controladores.controlador_usuario import ControladorUsuario
+        from controladores.controlador_ocorrencia import ControladorOcorrencia
+        from controladores.controlador_manutencao import ControladorManutencao
+        from controladores.controlador_plataforma import ControladorPlataforma
+        
+        return {
+            "maquina": ControladorMaquina(),
+            "reserva": ControladorReserva(),
+            "usuario": ControladorUsuario(),
+            "ocorrencia": ControladorOcorrencia(),
+            "manutencao": ControladorManutencao(),
+            "plataforma": ControladorPlataforma()
+        }
+    except ImportError as e:
+        st.error(f"Erro ao carregar controladores: {e}")
+        return None
+
+CONTROLADORES = get_controladores_adm_predio()
+if CONTROLADORES:
+    controlador_maquina = CONTROLADORES["maquina"]
+    controlador_reserva = CONTROLADORES["reserva"]
+    controlador_usuario = CONTROLADORES["usuario"]
+    controlador_ocorrencia = CONTROLADORES["ocorrencia"]
+    controlador_manutencao = CONTROLADORES["manutencao"]
+    controlador_plataforma = CONTROLADORES["plataforma"]
+else:
     controlador_maquina = None
     controlador_reserva = None
     controlador_usuario = None
     controlador_ocorrencia = None
     controlador_manutencao = None
+    controlador_plataforma = None
 
 
 if "id_lavanderia_ativa" not in st.session_state and st.session_state.get("lista_ids_lavanderia"):
-    st.session_state["id_lavanderia_ativa"] = st.session_state["lista_ids_lavanderia"][0]  #para armazenar a lavanderia que ele esta, abre a tela com a primeira
+    st.session_state["id_lavanderia_ativa"] = st.session_state["lista_ids_lavanderia"][0]
 
 
-# Pega os nomes de todas as lavanderias associadas aquele adm, e utiliza cache:
-def get_all_lavanderias_info(lista_ids_lavanderia):
-    if not lista_ids_lavanderia:
+# --- FUNÇÕES DE CACHE OTIMIZADAS (USANDO @st.cache_data) ---
+
+@st.cache_data(ttl=3600) # Cache por 1 hora
+def get_all_lavanderias_info(_lista_ids_lavanderia):
+    """Pega os nomes de todas as lavanderias associadas ao admin."""
+    if not _lista_ids_lavanderia or not controlador_plataforma:
         return {}
     
-    cache_key = "all_lavanderias_info"
-    if cache_key not in st.session_state:
-        lavanderias_info = {}
-        try:
-            from controladores.controlador_plataforma import ControladorPlataforma
-            controlador_plataforma = ControladorPlataforma()
-            
-            for id_lav in lista_ids_lavanderia:
-                info = controlador_plataforma.obter_lavanderia_por_id(id_lav)
-                if info:
-                    lavanderias_info[info['nome']] = id_lav # Mapeia Nome -> ID
-                    
-            st.session_state[cache_key] = lavanderias_info
-        except Exception as e:
-            print(f"Erro ao carregar lista de lavanderias para o admin: {e}")             # Em caso de erro, retorna dicionário vazio
-            st.session_state[cache_key] = {}
+    lavanderias_info = {}
+    try:
+        for id_lav in _lista_ids_lavanderia:
+            info = controlador_plataforma.obter_lavanderia_por_id(id_lav)
+            if info:
+                lavanderias_info[info['nome']] = id_lav # Mapeia Nome -> ID
+    except Exception as e:
+        print(f"Erro ao carregar lista de lavanderias para o admin: {e}")
+    
+    return lavanderias_info
 
-    return st.session_state[cache_key]
-
-
-# Cache para dados frequentemente acessados
-def get_lavanderia_nome(id_lavanderia):
+@st.cache_data(ttl=3600) # Cache de 1 hora para nome da lavanderia
+def get_lavanderia_nome(_id_lavanderia):
     """Cache do nome da lavanderia"""
-    if not id_lavanderia:
+    if not _id_lavanderia or not controlador_plataforma:
         return "Sua Lavanderia"
-        
-    cache_key = f"lavanderia_nome_{id_lavanderia}"
-    if cache_key not in st.session_state:
-        try:
-            from controladores.controlador_plataforma import ControladorPlataforma
-            controlador_plataforma = ControladorPlataforma()
-            lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(id_lavanderia)
-            st.session_state[cache_key] = lavanderia_info.get("nome", "Sua Lavanderia") if lavanderia_info else "Sua Lavanderia"
-        except:
-            st.session_state[cache_key] = "Sua Lavanderia"
-    return st.session_state[cache_key]
+    try:
+        lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(_id_lavanderia)
+        return lavanderia_info.get("nome", "Sua Lavanderia") if lavanderia_info else "Sua Lavanderia"
+    except:
+        return "Sua Lavanderia"
 
-def get_maquinas_lavanderia(id_lavanderia):
+@st.cache_data(ttl=60) # Cache de 1 minuto para máquinas
+def get_maquinas_lavanderia(_id_lavanderia):
     """Cache das máquinas da lavanderia"""
-    if not id_lavanderia:
+    if not _id_lavanderia or not controlador_maquina:
         return []
-        
-    cache_key = f"maquinas_{id_lavanderia}"
-    if cache_key not in st.session_state:
-        try:
-            maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia) if controlador_maquina else []
-            st.session_state[cache_key] = maquinas
-        except:
-            st.session_state[cache_key] = []
-    return st.session_state[cache_key]
+    try:
+        maquinas = controlador_maquina.listar_por_lavanderia(_id_lavanderia)
+        return maquinas
+    except Exception as e:
+        print(f"Erro ao carregar máquinas: {e}")
+        return []
 
 def clear_maquinas_cache(id_lavanderia):
     """Limpa cache de máquinas quando necessário"""
-    if id_lavanderia:
-        cache_key = f"maquinas_{id_lavanderia}"
-        if cache_key in st.session_state:
-            del st.session_state[cache_key]
+    get_maquinas_lavanderia.clear()
 
-def get_moradores_pendentes_cache(id_lavanderia):
+@st.cache_data(ttl=60) # Cache de 1 minuto para moradores pendentes
+def get_moradores_pendentes_cache(_id_lavanderia):
     """Cache de moradores pendentes"""
-    if not id_lavanderia:
+    if not _id_lavanderia or not controlador_usuario:
         return []
-        
-    cache_key = f"moradores_pendentes_{id_lavanderia}"
-    if cache_key not in st.session_state:
-        try:
-            moradores = controlador_usuario.listar_moradores_pendentes(id_lavanderia) if controlador_usuario else []
-            st.session_state[cache_key] = moradores
-        except:
-            st.session_state[cache_key] = []
-    return st.session_state[cache_key]
+    try:
+        moradores = controlador_usuario.listar_moradores_pendentes(_id_lavanderia)
+        return moradores
+    except Exception as e:
+        print(f"Erro ao carregar moradores pendentes: {e}")
+        return []
 
 
 def clear_moradores_cache(id_lavanderia):
     """Limpa cache de moradores"""
-    if id_lavanderia:
-        cache_key = f"moradores_pendentes_{id_lavanderia}"
-        if cache_key in st.session_state:
-            del st.session_state[cache_key]
+    get_moradores_pendentes_cache.clear()
 
-def get_ocorrencias_cache(id_lavanderia):
+@st.cache_data(ttl=30) # Cache de 30 segundos para ocorrências (mais dinâmico)
+def get_ocorrencias_cache(_id_lavanderia):
     """Cache de ocorrências"""
-    if not id_lavanderia:
+    if not _id_lavanderia or not controlador_ocorrencia:
         return []
-        
-    cache_key = f"ocorrencias_{id_lavanderia}"
-    if cache_key not in st.session_state:
-        try:
-            ocorrencias = controlador_ocorrencia.listar_ocorrencias_para_admin(id_lavanderia) if controlador_ocorrencia else []
-            st.session_state[cache_key] = ocorrencias
-        except:
-            st.session_state[cache_key] = []
-    return st.session_state[cache_key]
+    try:
+        ocorrencias = controlador_ocorrencia.listar_ocorrencias_para_admin(_id_lavanderia)
+        return ocorrencias
+    except Exception as e:
+        print(f"Erro ao carregar ocorrências: {e}")
+        return []
 
 def clear_ocorrencias_cache(id_lavanderia):
     """Limpa cache de ocorrências"""
-    if id_lavanderia:
-        cache_key = f"ocorrencias_{id_lavanderia}"
-        if cache_key in st.session_state:
-            del st.session_state[cache_key]
+    get_ocorrencias_cache.clear()
 
 # Tela de Aprovação de Moradores:
 def aprovar_moradores():
@@ -153,7 +144,7 @@ def aprovar_moradores():
 
     # Buscar moradores pendentes com cache
     try:
-        moradores_pendentes = get_moradores_pendentes_cache(id_lavanderia_admin)
+        moradores_pendentes = get_moradores_pendentes_cache(id_lavanderia_admin) # Otimizado: Usa função de cache
 
         if not moradores_pendentes:
             st.success("🎉 Não há moradores aguardando aprovação!")
@@ -185,7 +176,7 @@ def aprovar_moradores():
                                 try:
                                     if controlador_usuario.aprovar_morador(morador['id_usuario']):
                                         st.success(f"🎉 Morador **{morador['nome']}** aprovado com sucesso!")
-                                        clear_moradores_cache(id_lavanderia_admin)
+                                        clear_moradores_cache(id_lavanderia_admin) # Otimizado: Limpa cache
                                         st.rerun()
                                 except Exception as e:
                                     st.error(f"❌ Erro: {str(e)}")
@@ -196,7 +187,7 @@ def aprovar_moradores():
                                 try:
                                     if controlador_usuario.rejeitar_morador(morador['id_usuario']):
                                         st.success(f"🗑️ Morador **{morador['nome']}** rejeitado")
-                                        clear_moradores_cache(id_lavanderia_admin)
+                                        clear_moradores_cache(id_lavanderia_admin) # Otimizado: Limpa cache
                                         st.rerun()
                                 except Exception as e:
                                     st.error(f"❌ Erro: {str(e)}")
@@ -246,7 +237,7 @@ def gerenciar_maquinas():
                             id_lavanderia, codigo, tipo, capacidade, status
                         )
                         st.success(f"✅ Máquina cadastrada com sucesso! ID: {new_id}")
-                        clear_maquinas_cache(id_lavanderia)
+                        clear_maquinas_cache(id_lavanderia) # Otimizado: Limpa cache
                         st.rerun()
                     except Exception as e:
                         st.error(f"❌ Erro ao cadastrar máquina: {str(e)}")
@@ -256,7 +247,7 @@ def gerenciar_maquinas():
     # Listar as Máquinas Cadastradas
     st.subheader("📋 Máquinas cadastradas")
     try:
-        maquinas = get_maquinas_lavanderia(id_lavanderia)
+        maquinas = get_maquinas_lavanderia(id_lavanderia) # Otimizado: Usa função de cache
 
         if not maquinas:
             st.info("ℹ️ Nenhuma máquina cadastrada para esta Lavanderia!")
@@ -297,7 +288,7 @@ def gerenciar_maquinas():
                                 ok = controlador_maquina.remover_maquina(maq.id_maquina)
                                 if ok:
                                     st.success("✅ Máquina removida com sucesso!")
-                                    clear_maquinas_cache(id_lavanderia)
+                                    clear_maquinas_cache(id_lavanderia) # Otimizado: Limpa cache
                                     st.rerun()
                                 else:
                                     st.error("❌ Erro ao remover máquina.")
@@ -391,7 +382,7 @@ def editar_maquina_screen():
                     ok = controlador_maquina.editar_maquina(maq_id, campos)
                     if ok:
                         st.success("✅ Máquina atualizada com sucesso!")
-                        clear_maquinas_cache(st.session_state.get("id_lavanderia_ativa"))
+                        clear_maquinas_cache(st.session_state.get("id_lavanderia_ativa")) # Otimizado: Limpa cache
                         del st.session_state["editar_maquina"]
                         st.rerun()
                     else:
@@ -435,7 +426,7 @@ def gerenciar_manutencoes():
     with tab1:
         st.subheader("📅 Agendar Manutenção Preventiva")
 
-        maquinas = get_maquinas_lavanderia(id_lavanderia)
+        maquinas = get_maquinas_lavanderia(id_lavanderia) # Otimizado: Usa função de cache
 
         if not maquinas:
             st.info("ℹ️ Nenhuma máquina cadastrada para agendar manutenção.")
@@ -476,7 +467,7 @@ def gerenciar_manutencoes():
     with tab2:
         st.subheader("🔧 Registrar Manutenção Realizada")
 
-        maquinas = get_maquinas_lavanderia(id_lavanderia)
+        maquinas = get_maquinas_lavanderia(id_lavanderia) # Otimizado: Usa função de cache
 
         if not maquinas:
             st.info("ℹ️ Nenhuma máquina cadastrada.")
@@ -515,6 +506,7 @@ def gerenciar_manutencoes():
         # Mostrar manutenções pendentes primeiro
         st.markdown("#### 🔔 Manutenções Pendentes")
         try:
+            # Não usa cache, deve ser dinâmico
             manutencoes_pendentes = controlador_manutencao.listar_manutencoes_pendentes(id_lavanderia)
 
             if not manutencoes_pendentes:
@@ -548,6 +540,7 @@ def gerenciar_manutencoes():
         st.markdown("#### 📊 Todas as Manutenções")
 
         try:
+            # Não usa cache, deve ser dinâmico
             todas_manutencoes = controlador_manutencao.listar_manutencoes(id_lavanderia)
 
             if not todas_manutencoes:
@@ -663,12 +656,13 @@ def abrir_relatorios():
                 st.error("❌ A data final não pode ser anterior à data inicial.")
                 return
 
-            maquinas = get_maquinas_lavanderia(id_lavanderia)
+            maquinas = get_maquinas_lavanderia(id_lavanderia) # Otimizado: Usa função de cache
             if not maquinas:
                 st.info("ℹ️ Nenhuma máquina cadastrada nesta lavanderia.")
                 return
 
             with st.spinner("🔍 Buscando dados..."):
+                # Não usa cache, deve ser dinâmico
                 todas_reservas = controlador_reserva.listar_reservas_periodo(
                     id_lavanderia,
                     data_inicial.strftime("%Y-%m-%d"),
@@ -775,7 +769,7 @@ def visualizar_ocorrencias():
         return
 
     try:
-        ocorrencias = get_ocorrencias_cache(id_lavanderia_admin)
+        ocorrencias = get_ocorrencias_cache(id_lavanderia_admin) # Otimizado: Usa função de cache
 
         if not ocorrencias:
             st.success("🎉 Nenhuma ocorrência reportada. Tudo em ordem!")
@@ -797,7 +791,7 @@ def visualizar_ocorrencias():
                         try:
                             if controlador_ocorrencia.marcar_como_resolvida(oc.id_problema):
                                 st.success("Ocorrência marcada como resolvida!")
-                                clear_ocorrencias_cache(id_lavanderia_admin)
+                                clear_ocorrencias_cache(id_lavanderia_admin) # Otimizado: Limpa cache
                                 st.rerun()
                         except Exception as e:
                             st.error(f"Erro: {e}")
@@ -807,27 +801,33 @@ def visualizar_ocorrencias():
 
     st.markdown("---")
     if st.button("🔄 Atualizar Ocorrências"):
-        clear_ocorrencias_cache(id_lavanderia_admin)
+        clear_ocorrencias_cache(id_lavanderia_admin) # Otimizado: Limpa cache
         st.rerun()
         
     if st.button("⬅️ Voltar ao Menu Principal"):
         st.session_state.subpagina_adm_predio = None
         st.rerun()
 
-# Função para carregar dados do usuário
+# Função para carregar dados do usuário (Otimizado: cache via session_state)
 def carregar_dados_usuario():
-    if "usuario_dados" not in st.session_state and "id_usuario" in st.session_state:
+    usuario_id = st.session_state.get("usuario_dados", {}).get("id_usuario")
+    if not st.session_state.get("usuario_dados") or not st.session_state["usuario_dados"].get("nome"):
+        if not usuario_id or not controlador_usuario:
+            return
+        
         try:
-            usuario_dados = controlador_usuario.obter_usuario_por_id(st.session_state["id_usuario"])
+            usuario_dados = controlador_usuario.obter_usuario_por_id(usuario_id)
             if usuario_dados:
                 st.session_state["usuario_dados"] = {
                     "id_usuario": usuario_dados.id_usuario,
-                    "nome": usuario_datos.nome,
+                    "nome": usuario_dados.nome,
                     "email": usuario_dados.email,
                     "telefone": usuario_dados.telefone
                 }
         except Exception as e:
-            st.error(f"❌ Erro ao carregar dados do usuário: {str(e)}")
+            # Em um ambiente de produção, este erro não deve quebrar a tela
+            print(f"Erro ao carregar dados do usuário: {str(e)}") 
+
 
 # Tela de Edição de Perfil
 def editar_perfil():
@@ -890,6 +890,7 @@ def editar_perfil():
 
                 if sucesso:
                     st.success("✅ Perfil atualizado com sucesso!")
+                    # Atualiza a sessão
                     st.session_state["usuario_dados"]["nome"] = nome
                     st.session_state["usuario_dados"]["email"] = email
                     st.session_state["usuario_dados"]["telefone"] = telefone
@@ -911,11 +912,10 @@ def editar_perfil():
         st.rerun()
 
 
-
 # Tela inicial do Administrador do Prédio:
 def tela_adm_predio():
     # Verificação inicial do sistema
-    if not all([controlador_maquina, controlador_reserva, controlador_usuario, controlador_ocorrencia]):
+    if not CONTROLADORES:
         st.error("⚠️ Sistema temporariamente indisponível. Tente novamente.")
         if st.button("🔄 Recarregar"):
             st.rerun()
@@ -924,17 +924,17 @@ def tela_adm_predio():
     lista_ids = st.session_state.get("lista_ids_lavanderia", [])
     id_lavanderia_ativa = st.session_state.get("id_lavanderia_ativa")
 
-    st.sidebar.warning(f"IDs na Sessão: {lista_ids}")
-    st.sidebar.warning(f"ID Ativo: {id_lavanderia_ativa}")
+    st.sidebar.caption(f"IDs na Sessão: {lista_ids}")
+    st.sidebar.caption(f"ID Ativo: {id_lavanderia_ativa}")
     
-    # Obter nomes das lavanderias para o seletor
+    # Obter nomes das lavanderias para o seletor (Otimizado: Usa função de cache)
     lavanderias_info = get_all_lavanderias_info(lista_ids)
     nomes_lavanderias = list(lavanderias_info.keys()) # Lista dos nomes
 
     st.title("👨‍💼 Área do Administrador do Prédio")
     st.markdown("---")
 
-    # Carrega dados do usuário ao entrar na tela
+    # Carrega dados do usuário ao entrar na tela (Otimizado: cache via session_state)
     carregar_dados_usuario()
 
     # Sidebar otimizada
@@ -947,7 +947,7 @@ def tela_adm_predio():
             st.markdown("---")
             st.subheader("Selecione a Lavanderia")
             
-            # Garante que a lavanderia ativa atual seja o valor inicial
+            # Garante que a lavanderia ativa atual seja o valor inicial (Otimizado: Usa função de cache)
             nome_lav_ativa_atual = get_lavanderia_nome(id_lavanderia_ativa)
             try:
                 index_selecionado = nomes_lavanderias.index(nome_lav_ativa_atual)
@@ -967,7 +967,10 @@ def tela_adm_predio():
             # Se o ID do seletor mudou, atualiza a sessão e recarrega
             if novo_id_ativo != id_lavanderia_ativa and novo_id_ativo is not None:
                 st.session_state["id_lavanderia_ativa"] = novo_id_ativo
-                # Não precisa limpar o cache aqui, mas o rerunning irá forçar as funções a usarem o novo ID
+                # Otimizado: Limpa caches de dados dependentes do ID
+                clear_maquinas_cache(id_lavanderia_ativa)
+                clear_moradores_cache(id_lavanderia_ativa)
+                clear_ocorrencias_cache(id_lavanderia_ativa)
                 st.rerun() 
             
             id_lavanderia_ativa = novo_id_ativo # Atualiza o contexto local
@@ -976,14 +979,17 @@ def tela_adm_predio():
             st.error("❌ Administrador não associado a nenhuma lavanderia.")
             return
         
-        nome_lavanderia_ativa = get_lavanderia_nome(id_lavanderia_ativa) # <--- NOVO/CORRIGIDO
+        nome_lavanderia_ativa = get_lavanderia_nome(id_lavanderia_ativa) # Otimizado: Usa função de cache
         
         st.markdown("---")
         st.subheader("🔄 Atualizar Cache")
         if st.button("Limpar Cache", help="Recarregar todos os dados em cache"):
-            clear_maquinas_cache(id_lavanderia)
-            clear_moradores_cache(id_lavanderia)
-            clear_ocorrencias_cache(id_lavanderia)
+            # Otimizado: Chama as funções de limpeza de cache
+            clear_maquinas_cache(id_lavanderia_ativa)
+            clear_moradores_cache(id_lavanderia_ativa)
+            clear_ocorrencias_cache(id_lavanderia_ativa)
+            get_all_lavanderias_info.clear() # Limpa o cache global de lavanderias do admin
+            get_lavanderia_nome.clear() # Limpa o cache de nome
             st.success("Cache limpo!")
             st.rerun()
 
@@ -1031,7 +1037,7 @@ def tela_adm_predio():
         try:
             id_lavanderia = st.session_state.get("id_lavanderia_ativa")
             if id_lavanderia:
-                moradores_pendentes = get_moradores_pendentes_cache(id_lavanderia)
+                moradores_pendentes = get_moradores_pendentes_cache(id_lavanderia) # Otimizado: Usa função de cache
                 st.info(f"**📊 Estatística:** {len(moradores_pendentes)} morador(es) aguardando aprovação")
         except:
             pass
@@ -1048,7 +1054,7 @@ def tela_adm_predio():
         try:
             id_lavanderia = st.session_state.get("id_lavanderia_ativa")
             if id_lavanderia:
-                maquinas = get_maquinas_lavanderia(id_lavanderia)
+                maquinas = get_maquinas_lavanderia(id_lavanderia) # Otimizado: Usa função de cache
                 total = len(maquinas)
                 operantes = len([m for m in maquinas if m.status_maquina != "manutencao"])
                 st.info(f"**📊 Estatística:** {total} máquina(s) total, {operantes} operante(s)")
@@ -1067,7 +1073,8 @@ def tela_adm_predio():
         try:
             id_lavanderia = st.session_state.get("id_lavanderia_ativa")
             if id_lavanderia and controlador_manutencao:
-                pendentes = controlador_manutencao.listar_manutencoes_pendentes(id_lavanderia)
+                # Não usa cache, deve ser dinâmico
+                pendentes = controlador_manutencao.listar_manutencoes_pendentes(id_lavanderia) 
                 st.info(f"**📊 Estatística:** {len(pendentes)} manutenção(ões) pendente(s)")
         except:
             pass
@@ -1091,7 +1098,7 @@ def tela_adm_predio():
         try:
             id_lavanderia = st.session_state.get("id_lavanderia_ativa")
             if id_lavanderia:
-                ocorrencias = get_ocorrencias_cache(id_lavanderia)
+                ocorrencias = get_ocorrencias_cache(id_lavanderia) # Otimizado: Usa função de cache
                 st.info(f"**📊 Estatística:** {len(ocorrencias)} ocorrência(s) em aberto")
         except:
             pass
