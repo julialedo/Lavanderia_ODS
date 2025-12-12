@@ -749,16 +749,6 @@ def visualizar_ocorrencias():
                         st.write(f"**Máquina:** {oc.id_maquina if oc.id_maquina else 'N/A'}")
                         st.write(f"**Descrição:**")
                         st.warning(f"_{oc.descricao}_")
-                        
-                with col2:
-                    if st.button("✅ Resolver", key=f"resolver_{oc.id_problema}", use_container_width=True):
-                        try:
-                            if controlador_ocorrencia.marcar_como_resolvida(oc.id_problema):
-                                st.success("Ocorrência marcada como resolvida!")
-                                clear_ocorrencias_cache(id_lavanderia_admin)
-                                st.rerun()
-                        except Exception as e:
-                            st.error(f"Erro: {e}")
 
     except Exception as e:
         st.error(f"❌ Erro ao carregar ocorrências: {e}")
