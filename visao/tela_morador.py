@@ -4,25 +4,40 @@
 import streamlit as st
 from datetime import datetime
 
-#Controladores inicializados UMA VEZ no topo
-try:
-    from controladores.controlador_reserva import ControladorReserva
-    from controladores.controlador_maquina import ControladorMaquina
-    from controladores.controlador_usuario import ControladorUsuario
-    from controladores.controlador_ocorrencia import ControladorOcorrencia
-    from controladores.controlador_plataforma import ControladorPlataforma
-    
-    controlador_reserva = ControladorReserva()
-    controlador_maquina = ControladorMaquina()
-    controlador_usuario = ControladorUsuario()
-    controlador_ocorrencia = ControladorOcorrencia()
-    controlador_plataforma = ControladorPlataforma()
-except ImportError:
-    #Fallback para evitar quebras
+#Controladores inicializados e armazenador uma unica no topo
+@st.cache_resource
+def get_controladores_morador():
+    try:
+        from controladores.controlador_reserva import ControladorReserva
+        from controladores.controlador_maquina import ControladorMaquina
+        from controladores.controlador_usuario import ControladorUsuario
+        from controladores.controlador_ocorrencia import ControladorOcorrencia
+        from controladores.controlador_plataforma import ControladorPlataforma
+
+        return {
+            "reserva": ControladorReserva(),
+            "maquina": ControladorMaquina(),
+            "usuario": ControladorUsuario(),
+            "ocorrencia": ControladorOcorrencia(),
+            "plataforma": ControladorPlataforma()
+        }
+    except ImportError as e:
+        print(f"Erro ao carregar controladores: {e}") 
+        return None
+
+CONTROLADORES = get_controladores_morador()
+if CONTROLADORES:
+    controlador_reserva = CONTROLADORES["reserva"]
+    controlador_maquina = CONTROLADORES["maquina"]
+    controlador_usuario = CONTROLADORES["usuario"]
+    controlador_ocorrencia = CONTROLADORES["ocorrencia"]
+    controlador_plataforma = CONTROLADORES["plataforma"]
+else:
     controlador_reserva = None
     controlador_maquina = None
     controlador_usuario = None
     controlador_ocorrencia = None
+    controlador_plataforma = None
 
 
 #Cache para dados frequentemente acessados
@@ -134,37 +149,57 @@ def exibir_grid_maquinas(maquinas_status: list): #Exibe todas as máquinas e os 
                 st.caption(f"Capacidade: {maquina['capacidade']}")
 
 
-
+#------------------------
+# Tela inicial do Morador:
 def tela_morador():
-    # Verificação inicial de controladores
-    if not all([controlador_reserva, controlador_maquina, controlador_usuario, controlador_ocorrencia]):
+
+    # Verificação inicial de controladores:
+    if not all([controlador_reserva, controlador_maquina, controlador_usuario, controlador_ocorrencia, controlador_plataforma]):
         st.error("⚠️ Sistema temporariamente indisponível. Tente novamente.")
         if st.button("🔄 Recarregar"):
             st.rerun()
         return
     
+    #carrega dados do usuario ao entrar na tela
     dados_usuario = st.session_state.get("usuario_dados")
     if not dados_usuario:
         st.error("Sessão expirada. Faça login novamente.")
         return
-        
     usuario_id_logado = dados_usuario["id_usuario"]
     nome_usuario_logado = dados_usuario["nome"]
     id_lavanderia_logada = st.session_state.get("id_lavanderia")
     
-    # 🔥 NOVO: Buscar nome da lavanderia
-    nome_lavanderia = "Sua Lavanderia"
-    if id_lavanderia_logada:
-        from controladores.controlador_plataforma import ControladorPlataforma
-        controlador_plataforma = ControladorPlataforma()
-        lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(id_lavanderia_logada)
-        if lavanderia_info:
-            nome_lavanderia = lavanderia_info.get("nome", "Sua Lavanderia")
+
+    # SIDEBAR:
+    with st.sidebar:
+        if "usuario" in st.session_state:
+            st.subheader(f" 👤 Bem-vindo(a) {st.session_state['usuario']}!")
+
+        st.markdown("---")
+        if not id_lavanderia_logada:
+            st.error("❌ Morador não associado a nenhuma lavanderia.")
+        else:
+            lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(id_lavanderia_logada)
+            if lavanderia_info:
+                nome_lavanderia = lavanderia_info.get("nome")
+                st.subheader(f"Lavanderia Associada: \n {nome_lavanderia}")
     
+        st.markdown("---")
+        if st.button("Limpar Cache", use_container_width=True, help="Recarregar todos os dados em cache"):
+            clear_maquinas_cache(id_lavanderia_logada)
+            st.success("Cache limpo!")
+            st.rerun()
+
+        if st.button("🚪 Sair", use_container_width=True):
+            st.session_state.clear()
+            st.rerun()
+
+
+    # TELA PRINCIPAL:
     col_vazia, col_titulo, col_notificacao = st.columns([1, 8, 1])
     
     with col_titulo:
-        st.title(f"👤 Área do Morador - {nome_lavanderia}") # O título agora fica dentro da coluna
+        st.header(f"👤 Área do Morador - {nome_lavanderia}") # O título agora fica dentro da coluna
     
     with col_notificacao:
         # Use um st.button que altera o estado para 'notificacao'

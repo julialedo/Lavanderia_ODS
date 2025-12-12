@@ -939,7 +939,18 @@ def tela_adm_predio():
 
     
     # TELA PRINCIPAL:
-    st.header(" Área do Administrador do Prédio")
+    col_titulo, col_notificacao = st.columns([8, 1])
+    with col_titulo:
+        st.header(" Área do Administrador do Prédio")
+
+    with col_notificacao:
+        st.write("") # Espaçamento para alinhar com o título
+        # Botão que muda o st.session_state["pagina"] para rotear para a tela de notificações
+        if st.button("🔔", key="btn_notificacao_adm_predio", use_container_width=True):
+            st.session_state["pagina"] = "notificacao_adm_predio" # Usaremos esta chave no app.py
+            st.rerun()
+    
+    
     # Abas Principais:
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "👥 Aprovar Moradores", "⚙️ Gerenciar Máquinas", "🔧 Manutenções",
