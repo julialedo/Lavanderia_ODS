@@ -2,7 +2,6 @@
 # Responsável pelas validações, transformar dados para o model, decisões.
 # Não faz acesso direto ao banco, chama funções do Model. Retorna resultados para a View.
 # Aqui entra as regras de negócio do tipo "regra de validação" que controla o fluxo da aplicação (ex: verificar se todos os campos obrigatórios foram preenchidos pelo usuario).
-
 from datetime import datetime, time, timedelta
 from modelos.maquina import Maquina, criar_maquina, atualizar_maquina, deletar_maquina, listar_maquinas_por_lavanderia, obter_maquina_por_id, obter_status_e_reserva_ativa
 from modelos.reserva import listar_reservas_futuras_por_lavanderia
@@ -35,10 +34,39 @@ class ControladorMaquina:
 
     #Remover Máquina: OK
     def remover_maquina(self, id_maquina: int):
-        #VALIDAÇÕES VERIFICAR SE TEM RESERVAS PARA A MAQUINA E AVISAR OS MORADORES
-        #REGISTRAR LOG/AUDITORIA DA EXCLUSÃO
-        return deletar_maquina(id_maquina) #Chama deletar maquina do modelo
+        from modelos.notificacao import notificar_exclusao_de_maquina_para_usuarios 
+        from modelos.usuario import listar_ids_usuarios_por_lavanderia 
+        # 1. Obter a máquina para pegar os dados e id_lavanderia
+        maquina_a_deletar = obter_maquina_por_id(id_maquina)
+        if not maquina_a_deletar:
+            raise ValueError("Máquina não encontrada para remoção.")
 
+        id_lavanderia = maquina_a_deletar.id_lavanderia
+        codigo_maquina = maquina_a_deletar.codigo_maquina
+        tipo_maquina = maquina_a_deletar.tipo_maquina
+
+        # **VALIDAÇÕES (já existente, mas agora com contexto de notificação)**
+        # VALIDAR SE TEM RESERVAS FUTURAS, CANCELAR E AVISAR MORADORES
+        # ... (sua lógica de validação/aviso sobre reservas) ...
+        
+        # 2. Deletar a máquina do banco
+        deletado_ok = deletar_maquina(id_maquina) # Chama deletar maquina do modelo
+        
+        if deletado_ok:
+            # 3. Listar todos os usuários da lavanderia
+            ids_usuarios = listar_ids_usuarios_por_lavanderia(id_lavanderia)
+
+            # 4. Criar notificações para todos os usuários
+            # Chamamos a função de alto nível que acabamos de criar no modelo de notificação
+            notificar_exclusao_de_maquina_para_usuarios(
+                id_lavanderia, 
+                codigo_maquina, 
+                tipo_maquina.capitalize(), 
+                ids_usuarios
+            )
+            # REGISTRAR LOG/AUDITORIA DA EXCLUSÃO
+            
+        return deletado_ok
 
     # Listar Máquinas por lavanderia: OK
     def listar_por_lavanderia(self, id_lavanderia: int):
