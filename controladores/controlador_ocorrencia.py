@@ -13,6 +13,8 @@ class ControladorOcorrencia:
     def __init__(self):
         pass
 
+    
+    # Salva ocorrências no banco: CONFERIR POIS USA FUNÇÃO QUE NAO TEM
     def salvar_ocorrencia(self, id_maquina: str, descricao: str, nome_usuario: str, id_lavanderia: int):
 
         if not descricao or not nome_usuario:
@@ -40,11 +42,10 @@ class ControladorOcorrencia:
         except Exception as e:
             print(f"Erro no controlador ao salvar ocorrência: {e}")
             return None
-            
+    
+
+    # Busca todas as ocorrências do banco: CONFERIR
     def listar_ocorrencias(self):
-        """
-        Busca todas as ocorrências do banco de dados.
-        """
         try:
             return listar_ocorrencias_db()
         except Exception as e:
@@ -52,16 +53,11 @@ class ControladorOcorrencia:
             return []
 
 
-
-
+    # Lista as ocorrências para o administrador: OK
     def listar_ocorrencias_para_admin(self, id_lavanderia_admin: int):
-        """
-        Busca ocorrências específicas da lavanderia do Admin.
-        """
         if not id_lavanderia_admin:
             print("Erro: Admin não tem ID de lavanderia associado.")
             return []
-        
         try:
             # Chama a nova função filtrada do modelo
             return listar_ocorrencias_por_lavanderia_db(id_lavanderia_admin)

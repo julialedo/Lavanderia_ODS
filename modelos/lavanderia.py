@@ -16,9 +16,8 @@ class Lavanderia:
     data_cadastro_lav: Optional[str]
 
 
-# Cadastrar Lavanderia:
+# Cadastrar Lavanderia: OK
 def criar_lavanderia(lav: Lavanderia) -> int:
-    
     sql = "INSERT INTO lavanderia (id_adm_predio, nome, endereco, data_cadastro_lav) VALUES (%s, %s, %s, NOW())" #comando sql
     conn = conectar()  #abre a conexão
     try:
@@ -34,7 +33,6 @@ def criar_lavanderia(lav: Lavanderia) -> int:
 
 # Listar Lavanderias: OK
 def listar_lavanderias() -> List[Lavanderia]:
-    
     sql = "SELECT id_lavanderia, id_adm_predio, nome, endereco, data_cadastro_lav FROM lavanderia" #comando sql
     conn = conectar() #abre a conexão
     lavanderias = []
@@ -49,23 +47,8 @@ def listar_lavanderias() -> List[Lavanderia]:
         conn.close() #fecha
 
 
-# Contar quantas Lavanderias tem cadastradas:
-def contar_lavanderias() -> int:
-    
-    sql = "SELECT COUNT(*) FROM lavanderia" #comando sql
-    conn = conectar() #abre a conexão
-    try:
-        cur = conn.cursor()
-        cur.execute(sql) #executa comando
-        qtd_lavanderias = cur.fetchone()[0]   
-        cur.close()
-        return qtd_lavanderias #retorna a quantidade de lavanderias
-    finally:
-        conn.close() #fecha conexão
-
-# 🔥 NOVA FUNÇÃO: Obter lavanderia por ID
-def obter_lavanderia_por_id(lavanderia_id: int):
-    """Busca lavanderia por ID"""
+# Obter lavanderia por ID: OK
+def retornar_lavanderia_por_id(lavanderia_id: int):
     sql = "SELECT * FROM lavanderia WHERE id_lavanderia = %s"
     conn = conectar()
     try:
@@ -74,5 +57,64 @@ def obter_lavanderia_por_id(lavanderia_id: int):
         lavanderia = cur.fetchone()
         cur.close()
         return lavanderia
+    finally:
+        conn.close()
+
+
+# Atualizar lavanderia criada se adm, o seu novo adm definido: OK
+def atualizar_adm_lavanderia(id_lavanderia: int, id_adm: int):
+    sql = "UPDATE lavanderia SET id_adm_predio = %s WHERE id_lavanderia = %s"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_adm, id_lavanderia))
+        conn.commit()
+        cur.close()
+        return True
+    finally:
+        conn.close()
+
+
+# Contar total de lavanderias: OK
+def contar_lavanderias():
+    sql = "SELECT COUNT(*) FROM lavanderia"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql)
+        total = cur.fetchone()[0]
+        cur.close()
+        return total
+    finally:
+        conn.close()
+
+
+# Excluir Lavanderia: OK
+def excluir_lavanderia_por_id(id_lavanderia: int) -> bool:
+    sql = "DELETE FROM lavanderia WHERE id_lavanderia = %s"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_lavanderia,))
+        conn.commit()
+        cur.close()
+        # Retorna True se a exclusão foi bem-sucedida (pelo menos uma linha afetada)
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+# Remover o Administrador do Predio da Lavanderia: OK
+def remover_adm_lavanderia(id_lavanderia: int, id_adm_predio: int) -> bool:
+    sql_uptade_lav = "UPDATE lavanderia SET id_adm_predio = NULL WHERE id_lavanderia = %s"
+    sql_delete_associacao = "DELETE FROM usuario_lavanderia WHERE id_usuario = %s AND id_lavanderia = %s"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql_delete_associacao, (id_adm_predio, id_lavanderia))
+        cur.execute(sql_uptade_lav, (id_lavanderia,))
+        conn.commit()
+        cur.close()
+        return cur.rowcount > 0
     finally:
         conn.close()

@@ -219,3 +219,44 @@ def listar_reservas_futuras_por_lavanderia(id_lavanderia: int) -> List[Reserva]:
         return reservas
     finally:
         conn.close()
+
+
+# Contar total de reservas no dia de hoje: OK
+def contar_reservas_hoje():
+    sql = "SELECT COUNT(*) FROM reservas WHERE data_reserva = CURDATE()"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql)
+        total = cur.fetchone()[0]
+        cur.close()
+        return total
+    finally:
+        conn.close()
+
+
+# Retornar as lavanderias mais ativas, de acordo com as reservas: OK
+def lavanderias_mais_ativas():
+    sql = """
+        SELECT 
+            l.id_lavanderia, 
+            l.nome, 
+            COUNT(r.id_reserva) AS reservas 
+        FROM lavanderia l 
+        # FAZ JOIN COM MAQUINA, que tem o id_lavanderia
+        LEFT JOIN maquina m ON m.id_lavanderia = l.id_lavanderia 
+        # DEPOIS, FAZ JOIN COM RESERVAS, que tem o id_maquina
+        LEFT JOIN reservas r ON r.id_maquina = m.id_maquina 
+        GROUP BY l.id_lavanderia, l.nome 
+        ORDER BY reservas DESC 
+        LIMIT 5
+    """
+    conn = conectar()
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(sql)
+        dados = cur.fetchall()
+        cur.close()
+        return dados
+    finally:
+        conn.close()
