@@ -941,7 +941,7 @@ def tela_adm_predio():
     # TELA PRINCIPAL:
     col_titulo, col_notificacao = st.columns([8, 1])
     with col_titulo:
-        st.header(" Área do Administrador do Prédio")
+        st.header(" Área do Administrador da Lavanderia")
 
     with col_notificacao:
         st.write("") # Espaçamento para alinhar com o título

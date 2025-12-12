@@ -1,7 +1,8 @@
 # Controller - controlador_reserva.py
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
+from modelos.maquina import atualizar_status_maquina
 from modelos.reserva import (
     Reserva, 
     criar_reserva, 
@@ -18,19 +19,19 @@ class ControladorReserva:
         pass
     
     def _calcular_hora_fim(self, hora_inicio: str) -> str:
-        hora = int(hora_inicio.split(':')[0])
-        hora_fim = (hora + 1) % 24
-        return f"{hora_fim:02d}:00"
+        hora_fim = (datetime.strptime(hora_inicio, "%H:%M:%S") + timedelta(hours=1)).strftime("%H:%M:%S")
+        return hora_fim
+    
 
     def obter_proximo_id(self) -> int:
         from modelos.reserva import obter_maior_id_reserva 
         maior_id = obter_maior_id_reserva()
         return maior_id + 1 if maior_id else 1
     
+
     def criar_reserva(self, maquina_id: str, usuario_id: str, data_agendamento: str, hora_inicio: str):
         print(f"DEBUG: Tentando criar reserva - Máquina: {maquina_id}, Usuário: {usuario_id}, Data: {data_agendamento}, Hora: {hora_inicio}")
         if not self._horario_disponivel(maquina_id, data_agendamento, hora_inicio):
-        
             return None
         
         id_reserva = self.obter_proximo_id()
@@ -39,8 +40,8 @@ class ControladorReserva:
         
         nova_reserva = Reserva(
             id_reserva=id_reserva, 
-            id_maquina=maquina_id, 
-            id_usuario=usuario_id, 
+            id_maquina=str(maquina_id), 
+            id_usuario=str(usuario_id), 
             data_reserva=data_agendamento, 
             hora_inicio=hora_inicio,
             hora_fim=hora_fim,
@@ -48,8 +49,31 @@ class ControladorReserva:
         )
         print(f"DEBUG: Reserva criada - {nova_reserva}")
         print(f"DEBUG: Data saída no controlador: {data_agendamento}")
-        return criar_reserva(nova_reserva)
-    
+        resultado = criar_reserva(nova_reserva) #chama model
+
+        # Se a reserva começa agora (ou já está em andamento), atualiza status da máquina
+        try:
+            agora = datetime.now()
+            inicio_dt = datetime.strptime(f"{data_agendamento} {hora_inicio}", "%Y-%m-%d %H:%M")
+            fim_dt = datetime.strptime(f"{data_agendamento} {hora_fim}", "%Y-%m-%d %H:%M")
+        except Exception:
+            # fallback: se as strings trouxerem segundos, tentar sem corte
+            try:
+                inicio_dt = datetime.strptime(f"{data_agendamento} {hora_inicio}", "%Y-%m-%d %H:%M:%S")
+                fim_dt = datetime.strptime(f"{data_agendamento} {hora_fim}", "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                inicio_dt = None
+                fim_dt = None
+
+        if inicio_dt and fim_dt:
+            if inicio_dt <= agora < fim_dt:
+                try:
+                    atualizar_status_maquina(int(maquina_id), "em_uso")
+                except Exception as e:
+                    print(f"Erro ao atualizar status da máquina para 'em_uso': {e}")
+
+        return resultado
+
 
     def visualizar_horarios_disponiveis(self, maquina_id: str, data: str):
         todos_horarios = [f"{hora:02d}:00" for hora in range(8, 20)]

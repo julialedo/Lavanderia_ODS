@@ -73,7 +73,7 @@ def clear_maquinas_cache(id_lavanderia): #limpar cache de maquinas
         if cache_key in st.session_state:
             del st.session_state[cache_key]
 
-
+"""
 #Exibe ciclo ativo se houver
 def exibir_status_usuario_topo(maquinas_status: list):
     
@@ -101,7 +101,55 @@ def exibir_status_usuario_topo(maquinas_status: list):
     else:
         st.info("Você **não** está utilizando nenhuma máquina no momento ou seu ciclo já terminou.")
         st.caption("Abaixo, você pode selecionar uma máquina livre para reservar.")
+"""
 
+def exibir_status_usuario_topo(maquinas_status: list):
+
+    st.subheader("Seu Ciclo de Lavagem:")
+
+    # ----------------------------
+    # 1. Procurar máquina com ciclo ativo do usuário
+    # ----------------------------
+    ciclo_ativo = None
+    for maquina in maquinas_status:
+        
+        is_my = maquina.get("is_my_reservation")
+        status = maquina.get("status", "")
+
+        # Aceitar True, "True", 1, etc.
+        if (is_my is True or str(is_my).lower() == "true") and status == "Em Uso":
+            ciclo_ativo = maquina
+            break
+
+    # ----------------------------
+    # 2. Se encontrou ciclo → EXIBE
+    # ----------------------------
+    if ciclo_ativo:
+
+        codigo_maquina = ciclo_ativo.get("codigo_maquina")
+        etapa = ciclo_ativo.get("etapa_ciclo", "N/A")
+        progresso = ciclo_ativo.get("progresso", 0)
+        tempo_restante = ciclo_ativo.get("tempo_restante", "N/A")
+
+        st.info(f"✨ **Máquina {codigo_maquina}** está **{etapa}**")
+
+        st.progress(
+            progresso / 100,
+            text=f"{progresso}% concluído"
+        )
+
+        st.write(f"Tempo restante: **{tempo_restante}**")
+
+        if st.button("Gerenciar Minha Reserva", key="btn_gerenciar_ciclo"):
+            st.session_state["subpagina_morador"] = "minhas_reservas"
+            st.rerun()
+
+    # ----------------------------
+    # 3. Se não tem ciclo ativo
+    # ----------------------------
+    else:
+        st.info("Você **não** está utilizando nenhuma máquina no momento.")
+        st.caption("Abaixo, selecione uma máquina livre para reservar.")
 
 def exibir_grid_maquinas(maquinas_status: list): #Exibe todas as máquinas e os status delas
     
@@ -124,12 +172,32 @@ def exibir_grid_maquinas(maquinas_status: list): #Exibe todas as máquinas e os 
                 
                 if status == "Livre" or "Livre" in status:
                     st.success(f"✅ Status: **Livre**")
+
                     # Opção de escolher/reservar (RF1)
-                    button_key = f"reserva_{maquina['id_maquina']}_{i}"
-                    if st.button("Reservar", key=button_key, use_container_width=True):
-                        st.session_state["subpagina_morador"] = "reserva" 
-                        st.session_state["maquina_selecionada_reserva"] = maquina['id_maquina']
-                        st.rerun()
+                    usar_key = f"usar_{maquina['id_maquina']}_{i}"
+                    reservar_key = f"reserva_{maquina['id_maquina']}_{i}"
+
+                    if st.button("Usar Agora", key=usar_key, use_container_width=True):
+                        # Criar reserva para agora (1 hora)
+                        from datetime import datetime, timedelta
+                        agora = datetime.now()
+                        data_agora = agora.strftime("%Y-%m-%d")
+                        hora_inicio = agora.strftime("%H:%M:%S")
+
+                        # Chama o controlador de reservas
+                        nova_reserva = controlador_reserva.criar_reserva(
+                            str(maquina['id_maquina']),
+                            str(st.session_state.get("usuario_dados", {}).get("id_usuario")),
+                            data_agora,
+                            hora_inicio
+                        )
+                        if nova_reserva:
+                            st.success(f"🎉 Ciclo iniciado na Máquina {maquina['codigo_maquina']} ({hora_inicio}).")
+                            clear_maquinas_cache(st.session_state.get("id_lavanderia"))
+                            st.rerun()
+                        else:
+                            st.error("❌ Não foi possível iniciar o ciclo. Horário pode estar ocupado.")
+                
 
                 elif status == "Em Uso":
                     # Marca a reserva do próprio morador com um destaque
@@ -196,30 +264,26 @@ def tela_morador():
 
 
     # TELA PRINCIPAL:
-    col_vazia, col_titulo, col_notificacao = st.columns([1, 8, 1])
-    
+    col_titulo, col_notificacao = st.columns([8, 1])
     with col_titulo:
-        st.header(f"👤 Área do Morador - {nome_lavanderia}") # O título agora fica dentro da coluna
+        st.header(f"👤 Área do Morador") # O título agora fica dentro da coluna
     
     with col_notificacao:
-        # Use um st.button que altera o estado para 'notificacao'
-        if st.button("🔔", key="btn_notificacao"):
+        st.write("") # Espaçamento para alinhar com o título
+        if st.button("🔔", key="btn_notificacao", use_container_width=True):
             st.session_state["pagina"] = "notificacao"
             st.rerun() # Recarrega para mudar de página
 
-    st.markdown("---")
-    
+    st.markdown("---")    
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "🏠 Home",
         "📅 Visualizar Horários", 
         "⏰ Fazer Agendamento", 
         "📋 Minhas Reservas",
-        "👤 Meu Perfil",
-        "⚠️ Reportar Ocorrência"
+        "⚠️ Reportar Ocorrência",
+        "👤 Meu Perfil"
     ])
 
-    # ------------------------------------------------------------------
-    # TAB 1 - VISUALIZAR HORÁRIOS
     with tab1:
         st.title("🧺 Dashboard da Lavanderia")
         id_lavanderia = st.session_state.get("id_lavanderia")
@@ -243,7 +307,7 @@ def tela_morador():
         
         with col1:
             maquinas = get_maquinas_lavanderia(id_lavanderia_logada)
-                
+
             if maquinas:
                 opcoes_maquinas = []
                 for maquina in maquinas:
@@ -255,12 +319,13 @@ def tela_morador():
                     maquina_selecionada = st.selectbox("Selecione a máquina:", opcoes_maquinas)
                     maquina_id = maquina_selecionada.split(" ")[1]  
                 else:
-                    st.info("ℹ️ Nenhuma máquina disponível para visualização.")
+                    st.info("Nenhuma máquina disponível para visualização.")
                     maquina_id = None
             else:
-                st.info("ℹ️ Nenhuma máquina cadastrada nesta lavanderia.")
+                st.info("Nenhuma máquina cadastrada nesta lavanderia.")
                 maquina_id = None
         
+
         with col2:
             data_selecionada = st.date_input("Selecione a data")
         
@@ -283,8 +348,6 @@ def tela_morador():
         elif not maquina_id:
             st.warning("⚠️ Selecione uma máquina para ver os horários disponíveis.")
     
-    # ------------------------------------------------------------------
-    # TAB 2 - FAZER AGENDAMENTO
     with tab3:
         st.subheader("Fazer Agendamento")
         
@@ -316,7 +379,7 @@ def tela_morador():
                 data_agendamento = st.date_input("Data do agendamento", key="agendamento_data")
             
             with col2:
-                horarios = [f"{hora:02d}:00" for hora in range(8, 20)]
+                horarios = [f"{hora:02d}:00:00" for hora in range(8, 20)]
                 hora_agendamento = st.selectbox("Horário de início", horarios)
                 
             
@@ -333,13 +396,13 @@ def tela_morador():
                         st.success(f"🎉 Reserva realizada com sucesso! ID: {reserva.id_reserva}")
                         # Limpa cache para refletir nova reserva
                         clear_maquinas_cache(id_lavanderia_logada)
+                        st.rerun()
                     else:
                         st.error("❌ Erro ao fazer reserva. Horário indisponível ou dados inválidos.")
                 else:
                     st.error("❌ Nenhuma máquina selecionada para o agendamento.")
     
-    # ------------------------------------------------------------------
-    # TAB 3 - MINHAS RESERVAS
+
     with tab4:
         st.subheader("📋 Minhas Reservas")
         
@@ -513,46 +576,7 @@ def tela_morador():
         else:
             st.info("📭 Você não possui reservas ativas futuras ou para hoje.")
 
-    # ------------------------------------------------------------------
-    # TAB 4 - MEU PERFIL
     with tab5:
-        st.subheader("👤 Editar Informações do Perfil")
-
-        usuario_logado = st.session_state.get("usuario_dados")
-        if not usuario_logado:
-            st.warning("⚠️ Não foi possível carregar suas informações. Faça login novamente.")
-        else:
-            with st.form("form_editar_perfil_morador"):
-                nome = st.text_input("Nome", value=usuario_logado["nome"])
-                email = st.text_input("Email", value=usuario_logado["email"])
-                telefone = st.text_input("Telefone", value=usuario_logado["telefone"])
-                senha_atual = st.text_input("Senha Atual*", type="password")
-                nova_senha = st.text_input("Nova Senha (opcional)", type="password")
-
-                salvar = st.form_submit_button("💾 Salvar Alterações")
-
-                if salvar:
-                    try:
-                        sucesso = controlador_usuario.editar_perfil(
-                            id_usuario=usuario_logado["id_usuario"],
-                            nome=nome,
-                            email=email,
-                            telefone=telefone,
-                            senha_atual=senha_atual,
-                            nova_senha=nova_senha if nova_senha else None
-                        )
-                        if sucesso:
-                            st.success("✅ Perfil atualizado com sucesso!")
-                            st.session_state["usuario_dados"]["nome"] = nome
-                            st.session_state["usuario_dados"]["email"] = email
-                            st.session_state["usuario_dados"]["telefone"] = telefone
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Erro: {str(e)}")
-    
-    # ------------------------------------------------------------------
-    # TAB 5 - REPORTAR OCORRÊNCIA
-    with tab6:
         st.subheader("⚠️ Reportar uma Ocorrência")
         st.write("Encontrou algo que não está funcionando? Nos avise.")
 
@@ -604,3 +628,40 @@ def tela_morador():
                         st.success(f"✅ Ocorrência reportada com sucesso (ID: {nova_ocorrencia.id_problema}). Obrigado!")
                     else:
                         st.error("❌ Erro ao reportar a ocorrência. Tente novamente.")
+
+    with tab6:
+        st.subheader("👤 Editar Informações do Perfil")
+
+        usuario_logado = st.session_state.get("usuario_dados")
+        if not usuario_logado:
+            st.warning("⚠️ Não foi possível carregar suas informações. Faça login novamente.")
+        else:
+            with st.form("form_editar_perfil_morador"):
+                nome = st.text_input("Nome", value=usuario_logado["nome"])
+                email = st.text_input("Email", value=usuario_logado["email"])
+                telefone = st.text_input("Telefone", value=usuario_logado["telefone"])
+                senha_atual = st.text_input("Senha Atual*", type="password")
+                nova_senha = st.text_input("Nova Senha (opcional)", type="password")
+
+                salvar = st.form_submit_button("💾 Salvar Alterações")
+
+                if salvar:
+                    try:
+                        sucesso = controlador_usuario.editar_perfil(
+                            id_usuario=usuario_logado["id_usuario"],
+                            nome=nome,
+                            email=email,
+                            telefone=telefone,
+                            senha_atual=senha_atual,
+                            nova_senha=nova_senha if nova_senha else None
+                        )
+                        if sucesso:
+                            st.success("✅ Perfil atualizado com sucesso!")
+                            st.session_state["usuario_dados"]["nome"] = nome
+                            st.session_state["usuario_dados"]["email"] = email
+                            st.session_state["usuario_dados"]["telefone"] = telefone
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Erro: {str(e)}")
+    
+        
