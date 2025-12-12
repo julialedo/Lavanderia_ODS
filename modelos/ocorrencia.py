@@ -13,8 +13,8 @@ class ProblemaReportado(BaseModel):
     nome_usuario: str
     id_lavanderia: int
 
+# Busca todas as ocorrências do banco, ordenadas pela mais recente: 
 def listar_ocorrencias_db() -> list[ProblemaReportado]:
-    """Busca todas as ocorrências do banco, ordenadas pela mais recente."""
     ocorrencias = []
     try:
         with conectar() as conexao:
@@ -34,20 +34,14 @@ def listar_ocorrencias_db() -> list[ProblemaReportado]:
         return [] # Retorna lista vazia em caso de erro    
 
 
-
+# Lista ocorrências daquela lavanderia: OK
 def listar_ocorrencias_por_lavanderia_db(id_lavanderia: int) -> list[ProblemaReportado]:
-    """Busca ocorrências de UMA lavanderia específica."""
     ocorrencias = []
     try:
         with conectar() as conexao:
             with conexao.cursor(dictionary=True) as cursor:
-                sql = """
-                    SELECT * FROM problemas_reportados 
-                    WHERE id_lavanderia = %s 
-                    ORDER BY id_problema DESC
-                """
+                sql = "SELECT * FROM problemas_reportados WHERE id_lavanderia = %s ORDER BY id_problema DESC"
                 cursor.execute(sql, (id_lavanderia,)) # Passa o ID como parâmetro
-                
                 resultados = cursor.fetchall()
                 
                 if resultados:
@@ -61,11 +55,8 @@ def listar_ocorrencias_por_lavanderia_db(id_lavanderia: int) -> list[ProblemaRep
         return [] # Retorna lista vazia em caso de erro
 
 
-
-
-
+# Busca o maior ID existen e retorna o próximo: CONFERIR
 def _obter_proximo_id() -> int:
-    """Busca o maior ID existente e retorna o próximo."""
     try:
         with conectar() as conexao:
             with conexao.cursor() as cursor:
@@ -79,17 +70,14 @@ def _obter_proximo_id() -> int:
         print(f"Erro ao obter próximo ID do problema: {e}")
         return -1 # Indica um erro
 
+
+# Insere um novo reporte de problema no banco de dados:  CONFERIR
 def reportar_problema_db(problema: ProblemaReportado) -> bool:
-    """Insere um novo reporte de problema no banco de dados."""
     try:
         with conectar() as conexao:
             with conexao.cursor() as cursor:
                 # Usando o nome da tabela e colunas corretos
-                sql = """
-                INSERT INTO problemas_reportados 
-                (id_problema, id_maquina, descricao, data_problema, nome_usuario, id_lavanderia)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                """
+                sql = "INSERT INTO problemas_reportados (id_problema, id_maquina, descricao, data_problema, nome_usuario, id_lavanderia) VALUES (%s, %s, %s, %s, %s, %s)"
                 cursor.execute(sql, (
                     problema.id_problema,
                     problema.id_maquina,
@@ -104,10 +92,10 @@ def reportar_problema_db(problema: ProblemaReportado) -> bool:
         print(f"Erro ao inserir problema no banco: {e}")
         return False
 
-# Esta função é chamada pelo 'ControladorOcorrencia'
+
+# Esta função é chamada pelo 'ControladorOcorrencia' CONFERIR
+# Cria e salva um novo problema reportado:
 def criar_ocorrencia(id_maquina: str, descricao: str, nome_usuario: str, id_lavanderia: int) -> ProblemaReportado | None:
-    """Cria e salva um novo objeto ProblemaReportado."""
-    
     proximo_id = _obter_proximo_id()
     if proximo_id == -1:
         return None # Falha ao gerar ID

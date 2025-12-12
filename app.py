@@ -9,6 +9,23 @@ from visao.tela_notificacao_adm_predio import tela_notificacao_adm_predio
 from visao.tela_adm_plataforma import tela_adm_plataforma
 from visao.tela_notificacao_morador import tela_notificacao_morador
 
+@st.cache_resource
+def get_controlador_usuario():
+    try:
+        from controladores.controlador_usuario import ControladorUsuario
+        return ControladorUsuario()
+    except ImportError as e:
+        st.error(f"❌ Erro Crítico: Falha ao carregar ControladorUsuario. Detalhes: {e}")
+        return None
+    
+controlador_usuario = get_controlador_usuario()
+
+# Nome na aba do navegador:
+st.set_page_config(
+    page_title="Lavanderias Coletivas",
+    page_icon="🌀", 
+)
+
 # Header que irá aparecer no início da tela de login/cadastro:
 def header():
     st.markdown("""
@@ -44,10 +61,7 @@ if not st.session_state["logado"]:
 else:   
     #se tiver logado:
     if st.session_state["dados_carregados"] is False and "id_usuario" in st.session_state:
-        try:
-            from controladores.controlador_usuario import ControladorUsuario
-            controlador_usuario = ControladorUsuario()
-            
+        try:            
             lista_ids = controlador_usuario.obter_lavanderias_usuario(st.session_state["id_usuario"])
             
             if lista_ids:

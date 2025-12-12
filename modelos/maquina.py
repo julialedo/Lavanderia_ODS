@@ -18,9 +18,8 @@ class Maquina:
     capacidade: str
 
 
-#Cadastrar Máquina no Banco:
+# Cadastrar Máquina no Banco: OK
 def criar_maquina(maquina: Maquina) -> int:
-
     #gera o comando sql de Insert (a query), não coloquei id.maquina porque esta com autoincrement no banco:    
     sql = "INSERT INTO maquina (id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade) VALUES (%s, %s, %s, %s, %s)"
     conn = conectar()  #chama a função conectar para abrir a conexão com o banco
@@ -35,12 +34,10 @@ def criar_maquina(maquina: Maquina) -> int:
         conn.close()  #fecha a conexão
 
 
-#Atualizar Máquina no Banco:
+# Atualizar Máquina no Banco: OK
 def atualizar_maquina(id_maquina: int, campos: dict) -> bool:   #campos = dicionario com colunas e dados a atualizar
-    
     set_clause = ", ".join(f"{k} = %s" for k in campos.keys())  #organiza os campos em uma "string" set_clause
     params = list(campos.values()) + [id_maquina]  #orgazina os parametros
-    
     sql = f"UPDATE maquina SET {set_clause} WHERE id_maquina = %s" #gera o comando sql de UPDATE
     conn = conectar() #abre a conexao com o banco
     try:
@@ -54,9 +51,8 @@ def atualizar_maquina(id_maquina: int, campos: dict) -> bool:   #campos = dicion
         conn.close() #fecha a conexão
 
 
-#Deletar Máquinas no Banco:
+# Deletar Máquina no Banco: OK
 def deletar_maquina(id_maquina: int) -> bool:
-    
     sql = "DELETE FROM maquina WHERE id_maquina = %s" #comando sql delete
     conn = conectar() #abre a conexão
     try:
@@ -70,9 +66,8 @@ def deletar_maquina(id_maquina: int) -> bool:
         conn.close() #fecha a conexão
 
 
-#Listar Máquinas por lavanderia:
+# Listar Máquinas por lavanderia: OK
 def listar_maquinas_por_lavanderia(id_lavanderia: int) -> List[Maquina]:
-   
     sql = "SELECT id_maquina, id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade FROM maquina WHERE id_lavanderia = %s" #comando sql select
     conn = conectar() #abre a conexão
     maquinas = []
@@ -87,9 +82,35 @@ def listar_maquinas_por_lavanderia(id_lavanderia: int) -> List[Maquina]:
         conn.close() #fecha a conexão
 
 
-#Acessar uma Máquina especifica pelo id dela:
+# Contar quantidade de maquinas por lavanderia: OK
+def contar_maquinas_por_lavanderia(id_lavanderia: int) -> int:
+    sql = "SELECT COUNT(*) FROM maquina WHERE id_lavanderia = %s"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_lavanderia,))
+        qtd = cur.fetchone()[0]
+        cur.close()
+        return qtd
+    finally:
+        conn.close()
+
+# Contar total de maquinas de todas as lavanderias juntas: OK
+def contar_maquinas():
+    sql = "SELECT COUNT(*) FROM maquina"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql)
+        total = cur.fetchone()[0]
+        cur.close()
+        return total
+    finally:
+        conn.close()
+
+
+#Acessar uma Máquina especifica pelo id dela: OK
 def obter_maquina_por_id(id_maquina: int) -> Optional[Maquina]:
-    
     sql = "SELECT id_maquina, id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade FROM maquina WHERE id_maquina = %s" #comando sql select
     conn = conectar()  #abre conexão
     try:

@@ -4,87 +4,62 @@
 import streamlit as st
 from datetime import datetime
 
-# --- CONTROLADORES: INICIALIZAÇÃO ÚNICA COM CACHE ---
-@st.cache_resource
-def get_controladores_morador():
-    """Inicializa e armazena controladores complexos uma única vez."""
-    try:
-        from controladores.controlador_reserva import ControladorReserva
-        from controladores.controlador_maquina import ControladorMaquina
-        from controladores.controlador_usuario import ControladorUsuario
-        from controladores.controlador_ocorrencia import ControladorOcorrencia
-        from controladores.controlador_plataforma import ControladorPlataforma
-        
-        return {
-            "reserva": ControladorReserva(),
-            "maquina": ControladorMaquina(),
-            "usuario": ControladorUsuario(),
-            "ocorrencia": ControladorOcorrencia(),
-            "plataforma": ControladorPlataforma()
-        }
-    except ImportError as e:
-        # Apenas imprime o erro, para não quebrar a UI
-        print(f"Erro ao carregar controladores: {e}") 
-        return None
-
-CONTROLADORES = get_controladores_morador()
-if CONTROLADORES:
-    controlador_reserva = CONTROLADORES["reserva"]
-    controlador_maquina = CONTROLADORES["maquina"]
-    controlador_usuario = CONTROLADORES["usuario"]
-    controlador_ocorrencia = CONTROLADORES["ocorrencia"]
-    controlador_plataforma = CONTROLADORES["plataforma"]
-else:
+#Controladores inicializados UMA VEZ no topo
+try:
+    from controladores.controlador_reserva import ControladorReserva
+    from controladores.controlador_maquina import ControladorMaquina
+    from controladores.controlador_usuario import ControladorUsuario
+    from controladores.controlador_ocorrencia import ControladorOcorrencia
+    from controladores.controlador_plataforma import ControladorPlataforma
+    
+    controlador_reserva = ControladorReserva()
+    controlador_maquina = ControladorMaquina()
+    controlador_usuario = ControladorUsuario()
+    controlador_ocorrencia = ControladorOcorrencia()
+    controlador_plataforma = ControladorPlataforma()
+except ImportError:
+    #Fallback para evitar quebras
     controlador_reserva = None
     controlador_maquina = None
     controlador_usuario = None
     controlador_ocorrencia = None
-    controlador_plataforma = None
 
-# --- FUNÇÕES DE CACHE OTIMIZADAS ---
 
-@st.cache_data(ttl=3600) # Cache de 1 hora
-def get_lavanderia_nome(_id_lavanderia):  
-    """Cache do nome da lavanderia (Estático)"""
-    if not _id_lavanderia or not controlador_plataforma:
+#Cache para dados frequentemente acessados
+def get_lavanderia_nome(id_lavanderia):  #Cache do nome da lavanderia
+    if not id_lavanderia:
         return "Sua Lavanderia"
-    try:
-        lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(_id_lavanderia)
-        return lavanderia_info.get("nome", "Sua Lavanderia") if lavanderia_info else "Sua Lavanderia"
-    except:
-        return "Sua Lavanderia"
-
-@st.cache_data(ttl=60) # Cache de 1 minuto para máquinas (Semi-estático)
-def get_maquinas_lavanderia(_id_lavanderia): 
-    """Cache para máquinas da lavanderia"""
-    if not _id_lavanderia or not controlador_maquina:
-        return []
-    try:
-        maquinas = controlador_maquina.listar_por_lavanderia(_id_lavanderia)
-        return maquinas
-    except:
-        return []
-
-def clear_maquinas_cache(id_lavanderia): 
-    """Limpar cache de maquinas"""
-    get_maquinas_lavanderia.clear()
     
-# Cache com TTL de 5 segundos para o status em tempo real
-@st.cache_data(ttl=5) 
-def get_status_em_tempo_real(_id_lavanderia, _id_usuario_logado):
-    """Cache de 5s para evitar consultas massivas ao BD no Dashboard."""
-    if not controlador_maquina:
+    cache_key = f"lavanderia_nome_{id_lavanderia}"
+    if cache_key not in st.session_state:
+        try:
+            lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(id_lavanderia)
+            st.session_state[cache_key] = lavanderia_info.get("nome", "Sua Lavanderia") if lavanderia_info else "Sua Lavanderia"
+        except:
+            st.session_state[cache_key] = "Sua Lavanderia"
+    return st.session_state[cache_key]
+
+def get_maquinas_lavanderia(id_lavanderia): #Cache para máquinas da lavanderia
+    if not id_lavanderia:
         return []
-    try:
-        return controlador_maquina.obter_status_em_tempo_real(
-            _id_lavanderia, _id_usuario_logado
-        )
-    except Exception as e:
-        print(f"Erro ao carregar status em tempo real: {e}")
-        return []
+        
+    cache_key = f"maquinas_{id_lavanderia}"
+    if cache_key not in st.session_state:
+        try:
+            maquinas = controlador_maquina.listar_por_lavanderia(id_lavanderia) if controlador_maquina else []
+            st.session_state[cache_key] = maquinas
+        except:
+            st.session_state[cache_key] = []
+    return st.session_state[cache_key]
+
+def clear_maquinas_cache(id_lavanderia): #limpar cache de maquinas
+    if id_lavanderia:
+        cache_key = f"maquinas_{id_lavanderia}"
+        if cache_key in st.session_state:
+            del st.session_state[cache_key]
 
 
-# Exibe ciclo ativo se houver
+#Exibe ciclo ativo se houver
 def exibir_status_usuario_topo(maquinas_status: list):
     
     ciclo_ativo = next((m for m in maquinas_status if m.get('is_my_reservation')), None)
@@ -105,7 +80,7 @@ def exibir_status_usuario_topo(maquinas_status: list):
         
         # Link rápido para editar a reserva (opcional)
         if st.button("Gerenciar Minha Reserva", key="btn_gerenciar_ciclo"):
-             st.session_state["subpagina_morador"] = "minhas_reservas" 
+             st.session_state["subpagina_morador"] = "minhas_reservas"
              st.rerun()
 
     else:
@@ -159,9 +134,10 @@ def exibir_grid_maquinas(maquinas_status: list): #Exibe todas as máquinas e os 
                 st.caption(f"Capacidade: {maquina['capacidade']}")
 
 
+
 def tela_morador():
     # Verificação inicial de controladores
-    if not CONTROLADORES:
+    if not all([controlador_reserva, controlador_maquina, controlador_usuario, controlador_ocorrencia]):
         st.error("⚠️ Sistema temporariamente indisponível. Tente novamente.")
         if st.button("🔄 Recarregar"):
             st.rerun()
@@ -176,31 +152,25 @@ def tela_morador():
     nome_usuario_logado = dados_usuario["nome"]
     id_lavanderia_logada = st.session_state.get("id_lavanderia")
     
-    # Otimizado: Busca nome da lavanderia com cache
-    nome_lavanderia = get_lavanderia_nome(id_lavanderia_logada)
+    # 🔥 NOVO: Buscar nome da lavanderia
+    nome_lavanderia = "Sua Lavanderia"
+    if id_lavanderia_logada:
+        from controladores.controlador_plataforma import ControladorPlataforma
+        controlador_plataforma = ControladorPlataforma()
+        lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(id_lavanderia_logada)
+        if lavanderia_info:
+            nome_lavanderia = lavanderia_info.get("nome", "Sua Lavanderia")
     
-    # NOVO: SIDEBAR (Barra Lateral Esquerda)
-    with st.sidebar:
-        st.title("Menu do Morador")
-        st.write(f"👤 **{st.session_state.get('usuario', 'Morador')}**")
-        st.write(f"🏢 {nome_lavanderia}")
-        st.markdown("---")
-        
-        if st.button("🚪 Sair"):
-            st.session_state.clear()
-            st.rerun()
-
-    # Cabeçalho Principal (sem Sidebar)
     col_vazia, col_titulo, col_notificacao = st.columns([1, 8, 1])
     
     with col_titulo:
-        st.title(f"👤 Área do Morador")
+        st.title(f"👤 Área do Morador - {nome_lavanderia}") # O título agora fica dentro da coluna
     
     with col_notificacao:
-        # Usa um st.button que altera o estado para 'notificacao'
+        # Use um st.button que altera o estado para 'notificacao'
         if st.button("🔔", key="btn_notificacao"):
-            st.session_state["pagina"] = "tela_notificacao_morador"
-            st.rerun() 
+            st.session_state["pagina"] = "notificacao"
+            st.rerun() # Recarrega para mudar de página
 
     st.markdown("---")
     
@@ -214,30 +184,30 @@ def tela_morador():
     ])
 
     # ------------------------------------------------------------------
-    # TAB 1 - HOME / STATUS
+    # TAB 1 - VISUALIZAR HORÁRIOS
     with tab1:
         st.title("🧺 Dashboard da Lavanderia")
         id_lavanderia = st.session_state.get("id_lavanderia")
         id_usuario_logado = st.session_state.get("usuario_dados", {}).get("id_usuario")
-        
-        # OTIMIZAÇÃO DE DESEMPENHO: Usa cache de 5s para o status dinâmico
-        maquinas_status = get_status_em_tempo_real(
-            id_lavanderia, id_usuario_logado
-        )
+        try:
+            maquinas_status = controlador_maquina.obter_status_em_tempo_real(
+                id_lavanderia, id_usuario_logado
+            )
+        except Exception as e:
+            st.error(f"❌ Erro ao carregar status: {str(e)}")
+            maquinas_status = []
 
         exibir_status_usuario_topo(maquinas_status)
-        st.markdown("---") 
+        st.markdown("---") # Separador visual
         exibir_grid_maquinas(maquinas_status)
        
-    # ------------------------------------------------------------------
-    # TAB 2 - VISUALIZAR HORÁRIOS
     with tab2:
         st.subheader("Horários Disponíveis")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            maquinas = get_maquinas_lavanderia(id_lavanderia_logada) # Otimizado: Usa função de cache
+            maquinas = get_maquinas_lavanderia(id_lavanderia_logada)
                 
             if maquinas:
                 opcoes_maquinas = []
@@ -260,7 +230,6 @@ def tela_morador():
             data_selecionada = st.date_input("Selecione a data")
         
         if st.button("🔍 Ver Horários Disponíveis") and maquina_id:
-            # Não usa cache, deve ser dinâmico
             horarios_disponiveis = controlador_reserva.visualizar_horarios_disponiveis(
                 maquina_id, 
                 data_selecionada.strftime("%Y-%m-%d")
@@ -280,7 +249,7 @@ def tela_morador():
             st.warning("⚠️ Selecione uma máquina para ver os horários disponíveis.")
     
     # ------------------------------------------------------------------
-    # TAB 3 - FAZER AGENDAMENTO
+    # TAB 2 - FAZER AGENDAMENTO
     with tab3:
         st.subheader("Fazer Agendamento")
         
@@ -290,7 +259,7 @@ def tela_morador():
             maquina_id_para_agendar = None
 
             with col1:
-                maquinas = get_maquinas_lavanderia(id_lavanderia_logada) # Otimizado: Usa função de cache
+                maquinas = get_maquinas_lavanderia(id_lavanderia_logada)
                     
                 opcoes_maquinas_agendar = [] 
                 if maquinas:
@@ -327,20 +296,20 @@ def tela_morador():
                     
                     if reserva:
                         st.success(f"🎉 Reserva realizada com sucesso! ID: {reserva.id_reserva}")
-                        clear_maquinas_cache(id_lavanderia_logada) # Otimizado: Limpa cache após mudança de estado
+                        # Limpa cache para refletir nova reserva
+                        clear_maquinas_cache(id_lavanderia_logada)
                     else:
                         st.error("❌ Erro ao fazer reserva. Horário indisponível ou dados inválidos.")
                 else:
                     st.error("❌ Nenhuma máquina selecionada para o agendamento.")
     
     # ------------------------------------------------------------------
-    # TAB 4 - MINHAS RESERVAS
+    # TAB 3 - MINHAS RESERVAS
     with tab4:
         st.subheader("📋 Minhas Reservas")
         
         hoje = datetime.now().date()
         
-        # Não usa cache, deve ser dinâmico
         reservas_todas = controlador_reserva.obter_reservas_por_usuario(usuario_id_logado)
         
         reservas_validas = []
@@ -384,18 +353,21 @@ def tela_morador():
                         if st.button("❌ Cancelar", key=f"cancel_{reserva.id_reserva}"):
                             if controlador_reserva.cancelar_reserva(reserva.id_reserva, usuario_id_logado):
                                 st.success("Reserva cancelada com sucesso!")
-                                clear_maquinas_cache(id_lavanderia_logada) # Otimizado: Limpa cache
+                                clear_maquinas_cache(id_lavanderia_logada)
                                 st.rerun()
                             else:
                                 st.error("Erro ao cancelar reserva.")
                             
                     if st.session_state.get(f"editando_reserva_{reserva.id_reserva}"):
+                        st.markdown("---")
+                        st.subheader("✏️ Editar Reserva")
+                            
                         with st.form(f"form_editar_{reserva.id_reserva}"):
                             col_edit1, col_edit2 = st.columns(2)
                                     
                             maquina_id_edit = None
                             with col_edit1:
-                                maquinas = get_maquinas_lavanderia(id_lavanderia_logada) # Otimizado: Usa função de cache
+                                maquinas = get_maquinas_lavanderia(id_lavanderia_logada)
                                     
                                 opcoes_maquinas_editar = []
                                 if maquinas:
@@ -436,7 +408,6 @@ def tela_morador():
                                     
                                 horarios_disponiveis = []
                                 if maquina_id_edit: 
-                                    # Não usa cache, deve ser dinâmico
                                     horarios_disponiveis = controlador_reserva.visualizar_horarios_disponiveis(
                                         maquina_id_edit, 
                                         nova_data.strftime("%Y-%m-%d")
@@ -481,12 +452,11 @@ def tela_morador():
                                                     )
                                                     if nova_reserva:
                                                         st.success("🎉 Reserva editada com sucesso!")
-                                                        clear_maquinas_cache(id_lavanderia_logada) # Otimizado: Limpa cache
+                                                        clear_maquinas_cache(id_lavanderia_logada)
                                                         del st.session_state[f"editando_reserva_{reserva.id_reserva}"]
                                                         st.rerun()
                                                     else:
                                                         st.error("❌ Não foi possível criar a nova reserva. Horário pode estar ocupado.")
-                                                        # Tenta recriar a reserva original se a nova falhar
                                                         controlador_reserva.criar_reserva(
                                                             reserva.id_maquina,
                                                             usuario_id_logado,
@@ -509,7 +479,7 @@ def tela_morador():
             st.info("📭 Você não possui reservas ativas futuras ou para hoje.")
 
     # ------------------------------------------------------------------
-    # TAB 5 - MEU PERFIL
+    # TAB 4 - MEU PERFIL
     with tab5:
         st.subheader("👤 Editar Informações do Perfil")
 
@@ -538,7 +508,6 @@ def tela_morador():
                         )
                         if sucesso:
                             st.success("✅ Perfil atualizado com sucesso!")
-                            # Atualiza a sessão
                             st.session_state["usuario_dados"]["nome"] = nome
                             st.session_state["usuario_dados"]["email"] = email
                             st.session_state["usuario_dados"]["telefone"] = telefone
@@ -547,14 +516,14 @@ def tela_morador():
                         st.error(f"❌ Erro: {str(e)}")
     
     # ------------------------------------------------------------------
-    # TAB 6 - REPORTAR OCORRÊNCIA
+    # TAB 5 - REPORTAR OCORRÊNCIA
     with tab6:
         st.subheader("⚠️ Reportar uma Ocorrência")
         st.write("Encontrou algo que não está funcionando? Nos avise.")
 
         with st.form("form_reportar_ocorrencia", clear_on_submit=True):
             
-            maquinas = get_maquinas_lavanderia(id_lavanderia_logada) # Otimizado: Usa função de cache
+            maquinas = get_maquinas_lavanderia(id_lavanderia_logada)
             
             opcoes_maquinas_reporte = ["Nenhuma (Problema geral/Outro)"]
             

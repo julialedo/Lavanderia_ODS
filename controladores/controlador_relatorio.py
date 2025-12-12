@@ -8,10 +8,8 @@ from modelos.maquina import listar_maquinas_por_lavanderia
 
 class ControladorRelatorio:
 
+    # Gerar relatório de uso para uma lavanderia no período especificado: CONFIRMAR
     def gerar_relatorio_uso(self, id_lavanderia: int, data_inicial: str, data_final: str):
-        """
-        Gera relatório de uso para uma lavanderia no período especificado
-        """
         if not id_lavanderia:
             raise ValueError("ID da lavanderia é obrigatório")
         

@@ -17,9 +17,7 @@ class ControladorUsuario:
     def login(self, email: str, senha: str) -> dict:
         if not email or not senha:  
             raise ValueError("Email e senha são obrigatórios!")   
-
         usuario = autenticar_usuario(email, senha)
-
         if not usuario:    
             raise ValueError("Usuário não encontrado! Verifique o e-mail e a senha.")
         if usuario["status_conta"] != "ativa":   
@@ -28,10 +26,8 @@ class ControladorUsuario:
         return usuario
 
 
-    # Editar Perfi:
-    def editar_perfil(self, id_usuario: int, nome: str, email: str, telefone: str, 
-                     senha_atual: str, nova_senha: Optional[str] = None) -> bool:
-        """Edita perfil do usuário"""
+    # Editar Perfi: OK
+    def editar_perfil(self, id_usuario: int, nome: str, email: str, telefone: str, senha_atual: str, nova_senha: Optional[str] = None) -> bool:
         # 1. Validação dos campos obrigatórios
         if not all([id_usuario, nome, email, telefone, senha_atual]):
             raise ValueError("Todos os campos obrigatórios (Nome, Email, Telefone, Senha Atual) devem ser preenchidos!")
@@ -51,7 +47,7 @@ class ControladorUsuario:
         
         if not ok:
             raise Exception("Não foi possível atualizar as informações. Verifique os dados.")
-            
+    
         return True
 
 
@@ -188,7 +184,7 @@ class ControladorUsuario:
         return listar_lavanderias()
     
 
-    # Obter lavanderias por usuario:
+    # Obter lavanderias por usuario: OK
     def obter_lavanderias_usuario(self, id_usuario: int) -> list:
 
         if not id_usuario or not isinstance(id_usuario, int):
@@ -201,7 +197,6 @@ class ControladorUsuario:
             if not lista_ids:
                 print(f"Usuário ID {id_usuario} não está associado a nenhuma lavanderia.")
             return lista_ids
-            
         except Exception as e:
-            print(f"❌ Erro no controlador ao buscar lavanderias: {e}")
+            print(f"❌ Erro no controlador ao buscar lavanderias. Detalhes: {e}")
             return []
