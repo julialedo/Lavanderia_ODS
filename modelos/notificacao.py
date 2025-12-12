@@ -3,6 +3,7 @@
 from pydantic import BaseModel
 from datetime import date
 from banco_de_dados.conexao_bd import conectar 
+from typing import List 
 
 class Notificacao(BaseModel):
     id_notificacao: int
@@ -115,3 +116,58 @@ def marcar_notificacao_como_lida_db(id_notificacao: int) -> bool:
     except Exception as e:
         print(f"Erro ao marcar notificação {id_notificacao} como lida no DB: {e}")
         return False
+
+
+
+
+def criar_multiplas_notificacoes_db(notificacoes: List[Notificacao]) -> bool:
+    """Insere uma lista de novas notificações no banco de dados de forma eficiente."""
+    if not notificacoes:
+        return True # Nada para inserir
+
+    # Gera os valores a serem inseridos
+    valores = [
+        (n.id_notificacao, n.id_usuario, n.mensagem, n.data_envio, n.status)
+        for n in notificacoes
+    ]
+
+    sql = """
+    INSERT INTO notificacoes
+    (id_notificacao, id_usuario, mensagem, data_envio, status)
+    VALUES (%s, %s, %s, %s, %s)
+    """
+
+    try:
+        with conectar() as conexao:
+            with conexao.cursor() as cursor:
+                # O executemany é mais eficiente para várias inserções de uma vez
+                cursor.executemany(sql, valores)
+                conexao.commit()
+                return True
+    except Exception as e:
+        print(f"Erro ao inserir múltiplas notificações no banco: {e}")
+        return False
+        
+def notificar_exclusao_de_maquina_para_usuarios(id_lavanderia: int, codigo_maquina: str, tipo_maquina: str, ids_usuarios: List[int]) -> bool:
+    """Cria e insere a notificação de exclusão para todos os usuários da lavanderia."""
+    from modelos.usuario import listar_ids_usuarios_por_lavanderia
+    proximo_id = _obter_proximo_id_notificacao()
+    if proximo_id == -1:
+        return False # Falha ao gerar ID base
+    
+    mensagem = f"Atenção: A {tipo_maquina} {codigo_maquina} foi permanentemente removida da lavanderia."
+    data_hoje = date.today()
+    
+    novas_notificacoes = []
+    # Cria um objeto Notificacao para cada usuário
+    for i, id_usuario in enumerate(ids_usuarios):
+        notificacao = Notificacao(
+            id_notificacao=proximo_id + i, # Garante ID único
+            id_usuario=id_usuario,
+            mensagem=mensagem,
+            data_envio=data_hoje,
+            status="nao_lido",
+        )
+        novas_notificacoes.append(notificacao)
+        
+    return criar_multiplas_notificacoes_db(novas_notificacoes)

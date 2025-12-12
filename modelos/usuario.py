@@ -243,3 +243,35 @@ def desassociar_usuarios_da_lavanderia(id_lavanderia: int) -> int:
         return 0
     finally:
         conn.close()
+
+
+
+
+# Listar IDs de Usuários por Lavanderia
+def listar_ids_usuarios_por_lavanderia(id_lavanderia: int) -> List[int]:
+    """
+    Busca os IDs de todos os usuários (moradores e admins) 
+    associados a uma lavanderia específica, usando a tabela N:N.
+    """
+    sql = "SELECT id_usuario FROM usuario_lavanderia WHERE id_lavanderia = %s"
+    conn = conectar()
+    ids_usuarios = []
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_lavanderia,))
+        
+        # Extrai apenas os IDs da lista de tuplas (ex: [(1,), (5,), ...])
+        resultados = cur.fetchall()
+        
+        if resultados:
+             ids_usuarios = [row[0] for row in resultados]
+             
+        cur.close()
+        return ids_usuarios
+        
+    except Exception as e:
+        print(f"Erro ao listar IDs de usuários por lavanderia {id_lavanderia}: {e}")
+        # Em caso de falha, retorna lista vazia para evitar notificações indesejadas
+        return [] 
+    finally:
+        conn.close()
