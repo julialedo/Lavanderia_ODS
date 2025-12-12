@@ -151,3 +151,33 @@ def obter_status_e_reserva_ativa(id_lavanderia: int) -> List[Dict]:
     finally:
         conn.close()
 
+
+# Atualiza a coluna status_maquina para 'livre', 'em_uso' ou 'manutencao'.
+def atualizar_status_maquina(id_maquina: int, novo_status: str) -> bool:
+    sql = "UPDATE maquina SET status_maquina = %s WHERE id_maquina = %s"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (novo_status, id_maquina))
+        conn.commit()
+        linhas = cur.rowcount
+        cur.close()
+        return linhas > 0
+    finally:
+        conn.close()
+
+
+# Retorna o status da maquina em tempo atual
+def obter_status_maquina_db(id_maquina: int) -> str | None:
+    sql = "SELECT status_maquina FROM maquina WHERE id_maquina = %s"
+    conn = conectar()
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, (id_maquina,))
+        row = cur.fetchone()
+        cur.close()
+        if row:
+            return row[0]
+        return None
+    finally:
+        conn.close()

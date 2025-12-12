@@ -4,8 +4,8 @@
 # Aqui entra as regras de negócio do tipo "regra de validação" que controla o fluxo da aplicação (ex: verificar se todos os campos obrigatórios foram preenchidos pelo usuario).
 
 from datetime import datetime, time, timedelta
-from modelos.maquina import Maquina, criar_maquina, atualizar_maquina, deletar_maquina, listar_maquinas_por_lavanderia, obter_maquina_por_id, obter_status_e_reserva_ativa
-from modelos.reserva import listar_reservas_futuras_por_lavanderia
+from modelos.maquina import Maquina, criar_maquina, atualizar_maquina, deletar_maquina, listar_maquinas_por_lavanderia, obter_maquina_por_id, atualizar_status_maquina, obter_status_e_reserva_ativa
+from modelos.reserva import listar_reservas_futuras_por_lavanderia, atualizar_status_reserva
 class ControladorMaquina:
 
     #Cadastrar Máquinas: OK
@@ -101,25 +101,34 @@ class ControladorMaquina:
                 "progresso": 0,
                 "tempo_restante": "N/A",
                 "etapa_ciclo": "N/A",
-                "is_my_reservation": False,
+                "is_my_reservation": False, 
             } for m in maquinas
         }
         
         agora = datetime.now()
         
         for reserva in reservas_futuras:
-            maquina_id = reserva.id_maquina
+            maquina_id = int(reserva.id_maquina)
+            print(f"maquina id {maquina_id}")
             maquina_data = status_map.get(maquina_id)
 
             if not maquina_data:
                 continue 
 
-            if maquina_data["status"] == "Manutencao":  #se o statur for manutenção, ignora reservas
+            if maquina_data["status"].lower() == "manutencao":  #se o statur for manutenção, ignora reservas
                  continue
-
-            data_hora_inicio = datetime.strptime(f"{reserva.data_reserva} {reserva.hora_inicio}", "%Y-%m-%d %H:%M:%S")
-            data_hora_fim = datetime.strptime(f"{reserva.data_reserva} {reserva.hora_fim}", "%Y-%m-%d %H:%M:%S")
             
+            try:
+                data_hora_inicio = datetime.strptime(f"{reserva.data_reserva} {reserva.hora_inicio}", "%Y-%m-%d %H:%M:%S")
+                data_hora_fim = datetime.strptime(f"{reserva.data_reserva} {reserva.hora_fim}", "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                try:
+                    data_hora_inicio = datetime.strptime(f"{reserva.data_reserva} {reserva.hora_inicio}", "%Y-%m-%d %H:%M:%S")
+                    data_hora_fim = datetime.strptime(f"{reserva.data_reserva} {reserva.hora_fim}", "%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    # não conseguir parsear, pula
+                    continue
+
             #Verificar se a reserva está ATIVA AGORA (Ciclo em andamento)
             if data_hora_inicio <= agora < data_hora_fim:
                 
@@ -135,16 +144,45 @@ class ControladorMaquina:
                     "etapa_ciclo": etapa_ciclo,
                     "is_my_reservation": str(reserva.id_usuario) == str(id_usuario_logado)
                 })
+                print(f"RESERVA id usuario {reserva.id_usuario}, id usuario_logado: {id_usuario_logado}")
+            
+                # Certifica-se que no banco a máquina está com status 'em_uso'
+                try:
+                    atualizar_status_maquina(maquina_id, "em_uso")
+                except Exception as e:
+                    print(f"Erro ao marcar máquina como em_uso no DB: {e}")
+
 
             # b) Verificar se é uma reserva FUTURA
             elif agora < data_hora_inicio:
                 
-                # Se a máquina não está em uso (o caso 'a'), mas tem uma reserva futura,
-                # podemos marcá-la como 'Agendada' (status de menor prioridade).
-                if maquina_data["status"] == "Livre":
+                # Se a máquina não está em uso fica Agendada
+                if maquina_data["status"].lower() == "livre":
                     maquina_data["status"] = "Agendada"
                     maquina_data["tempo_restante"] = f"Inicia às {reserva.hora_inicio}"
 
+
+            # Caso: reserva já passou (reserva expirou) -> liberar máquina e fechar reserva
+            elif agora >= data_hora_fim:
+                # Se a reserva passou, devemos garantir que ela esteja finalizada e a maquina liberada.
+                try:
+                    # atualizar status reserva no banco para 'finalizada' (se ainda estiver ativa)
+                    atualizar_status_reserva(reserva.id_reserva, "concluida")
+                except Exception as e:
+                    print(f"Erro ao finalizar reserva {reserva.id_reserva}: {e}")
+                try:
+                    atualizar_status_maquina(maquina_id, "livre")
+                except Exception as e:
+                    print(f"Erro ao liberar máquina {maquina_id}: {e}")
+
+                # Também refletir no mapa local:
+                maquina_data.update({
+                    "status": "Livre",
+                    "progresso": 0,
+                    "tempo_restante": "N/A",
+                    "etapa_ciclo": "N/A",
+                    "is_my_reservation": False
+                })
 
         # 5. Converter o dicionário de volta para uma lista (o formato que a View espera)
         return list(status_map.values())

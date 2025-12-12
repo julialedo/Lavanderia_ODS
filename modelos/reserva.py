@@ -19,7 +19,15 @@ class Reserva:
 # Criar uma reserva:
 def criar_reserva(reserva: Reserva) -> Reserva:
     print(f"DEBUG: Data recebida no modelo: {reserva.data_reserva}")
-    """Insere uma nova reserva no banco de dados."""
+    # Garantir formato hora (HH:MM)
+    def _normalizar_hora(h):
+        if isinstance(h, str):
+            return h[:5]  # corta possíveis ':00' extras ou segundos
+        return str(h)
+
+    reserva.hora_inicio = _normalizar_hora(reserva.hora_inicio)
+    reserva.hora_fim = _normalizar_hora(reserva.hora_fim)
+    
     sql = """
         INSERT INTO reservas 
         (id_reserva, id_maquina, id_usuario, data_reserva, hora_inicio, hora_fim, status_reserva) 
