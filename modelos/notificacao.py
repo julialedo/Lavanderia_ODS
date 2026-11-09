@@ -12,7 +12,6 @@ class Notificacao(BaseModel):
     data_envio: date
     status: str # 'nao_lido', 'lido'
 
-# --- Funções de Banco de Dados ---
 
 def _obter_proximo_id_notificacao() -> int:
     """Busca o maior ID existente na tabela notificacoes e retorna o próximo (para id incremental)."""
@@ -103,7 +102,7 @@ def listar_notificacoes_por_usuario(id_usuario: int) -> list[dict]:
 def marcar_notificacao_como_lida_db(id_notificacao: int) -> bool:
     """Atualiza o status de uma notificação para 'lido'."""
     try:
-        with conectar() as conexao: # Supondo que 'conectar()' é sua função de conexão
+        with conectar() as conexao:
             with conexao.cursor() as cursor:
                 sql = """
                 UPDATE notificacoes 
@@ -116,8 +115,6 @@ def marcar_notificacao_como_lida_db(id_notificacao: int) -> bool:
     except Exception as e:
         print(f"Erro ao marcar notificação {id_notificacao} como lida no DB: {e}")
         return False
-
-
 
 
 def criar_multiplas_notificacoes_db(notificacoes: List[Notificacao]) -> bool:
@@ -162,7 +159,7 @@ def notificar_exclusao_de_maquina_para_usuarios(id_lavanderia: int, codigo_maqui
     # Cria um objeto Notificacao para cada usuário
     for i, id_usuario in enumerate(ids_usuarios):
         notificacao = Notificacao(
-            id_notificacao=proximo_id + i, # Garante ID único
+            id_notificacao=proximo_id + i,
             id_usuario=id_usuario,
             mensagem=mensagem,
             data_envio=data_hoje,

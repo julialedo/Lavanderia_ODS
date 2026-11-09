@@ -19,7 +19,6 @@ class Reserva:
 # Criar uma reserva:
 def criar_reserva(reserva: Reserva) -> Reserva:
     print(f"DEBUG: Data recebida no modelo: {reserva.data_reserva}")
-    # Garantir formato hora (HH:MM)
     def _normalizar_hora(h):
         if isinstance(h, str):
             return h[:5]  # corta possíveis ':00' extras ou segundos
@@ -47,7 +46,6 @@ def criar_reserva(reserva: Reserva) -> Reserva:
         return reserva
     finally:
         conn.close()
-
 
 
 def obter_reservas_por_maquina_e_data(maquina_id: str, data: str) -> List[Reserva]:
@@ -222,14 +220,14 @@ def listar_reservas_futuras_por_lavanderia(id_lavanderia: int) -> List[Reserva]:
         for row in cur.fetchall():
             # Assumindo que a conversão de row para objeto Reserva acontece aqui.
             row_list = list(row)
-            reservas.append(Reserva(*row_list)) # Certifique-se que a conversão de tipo (timedelta/string) está correta aqui
+            reservas.append(Reserva(*row_list))
         cur.close()
         return reservas
     finally:
         conn.close()
 
 
-# Contar total de reservas no dia de hoje: OK
+# Contar total de reservas no dia de hoje
 def contar_reservas_hoje():
     sql = "SELECT COUNT(*) FROM reservas WHERE data_reserva = CURDATE()"
     conn = conectar()
@@ -243,7 +241,7 @@ def contar_reservas_hoje():
         conn.close()
 
 
-# Retornar as lavanderias mais ativas, de acordo com as reservas: OK
+# Retornar as lavanderias mais ativas, de acordo com as reservas
 def lavanderias_mais_ativas():
     sql = """
         SELECT 

@@ -19,7 +19,7 @@ class Usuario:
     data_cadastro_usuario: Optional[str]
 
 
-# Autenticar Login: OK
+# Autenticar Login
 def autenticar_usuario(email: str, senha: str):
     sql = "SELECT * FROM usuario WHERE email = %s AND senha = %s"    #comando sql
     conn = conectar() #abre conexão
@@ -33,7 +33,7 @@ def autenticar_usuario(email: str, senha: str):
         conn.close() #fecha conexão
 
 
-# Editar dados de perfil: OK
+# Editar dados de perfil
 def editar_usuario(id_usuario: int, nome: str, email: str, telefone: str, nova_senha: Optional[str] = None):
     # Base SQL para atualização
     sql = "UPDATE usuario SET nome = %s, email = %s, telefone = %s"
@@ -57,7 +57,7 @@ def editar_usuario(id_usuario: int, nome: str, email: str, telefone: str, nova_s
         conn.close() #fecha conexão
 
 
-# Verificar se email já existe: OK
+# Verificar se email já existe
 def verificar_email_existente(email: str) -> bool:
     sql = "SELECT COUNT(*) FROM usuario WHERE email = %s"
     conn = conectar()
@@ -71,7 +71,7 @@ def verificar_email_existente(email: str) -> bool:
         conn.close()
 
 
-# Cadastrar novo morador no banco, com status de conta inativa, após ele fazer o cadastro: OK
+# Cadastrar novo morador no banco, com status de conta inativa, após ele fazer o cadastro
 def criar_morador(nome: str, email: str, senha: str, telefone: str, id_lavanderia: str):
     sql = "INSERT INTO usuario (nome, email, senha, telefone, tipo_usuario, status_conta, data_cadastro_usuario) VALUES (%s, %s, %s, %s, 'morador', 'inativa', NOW())"
     sql_associacao = "INSERT INTO usuario_lavanderia (id_usuario, id_lavanderia) VALUES (%s, %s)"
@@ -91,7 +91,7 @@ def criar_morador(nome: str, email: str, senha: str, telefone: str, id_lavanderi
         conn.close()
 
 
-# Cadastrar novo administrador do prédio: OK
+# Cadastrar novo administrador do prédio
 def criar_administrador_predio(nome: str, email: str, senha: str, telefone: str, id_lavanderia: int):
     
     sql = "INSERT INTO usuario (nome, email, senha, telefone, tipo_usuario, status_conta) VALUES (%s, %s, %s, %s, 'adm_predio', 'ativa')"
@@ -112,7 +112,7 @@ def criar_administrador_predio(nome: str, email: str, senha: str, telefone: str,
         conn.close() #fecha conexão
 
 
-# Listar moradores pendentes por lavanderia: OK
+# Listar moradores pendentes por lavanderia
 def listar_moradores_pendentes_lavanderia(id_lavanderia: int):
     sql = ("SELECT u.id_usuario, u.nome, u.email, u.telefone, u.data_cadastro_usuario "
            "FROM usuario u INNER JOIN usuario_lavanderia ul ON u.id_usuario = ul.id_usuario "
@@ -129,7 +129,7 @@ def listar_moradores_pendentes_lavanderia(id_lavanderia: int):
         conn.close()
 
 
-# Aprovar conta de morador (para adm_predio): OK
+# Aprovar conta de morador (para adm_predio)
 def aprovar_conta_morador(id_usuario: int):
     sql = "UPDATE usuario SET status_conta = 'ativa' WHERE id_usuario = %s AND tipo_usuario = 'morador'"
     conn = conectar()
@@ -144,7 +144,7 @@ def aprovar_conta_morador(id_usuario: int):
         conn.close()
 
 
-# Rejeitar conta de morador (excluira): OK
+# Rejeitar conta de morador (excluira)
 def rejeitar_conta_morador(id_usuario: int):
     sql = "DELETE FROM usuario WHERE id_usuario = %s AND tipo_usuario = 'morador' AND status_conta = 'inativa'"
     conn = conectar()
@@ -159,7 +159,7 @@ def rejeitar_conta_morador(id_usuario: int):
         conn.close()
 
 
-# Obter usuário por ID: OK
+# Obter usuário por ID
 def obter_usuario_por_id(usuario_id: int):
     sql = "SELECT * FROM usuario WHERE id_usuario = %s"
     conn = conectar()
@@ -173,7 +173,7 @@ def obter_usuario_por_id(usuario_id: int):
         conn.close()
 
 
-# Contar quantidade de usuarios: OK
+# Contar quantidade de usuarios
 def contar_usuarios() -> int:
     sql = "SELECT COUNT(*) FROM usuario"   #comando sql
     conn = conectar()
@@ -187,7 +187,7 @@ def contar_usuarios() -> int:
         conn.close()
 
 
-# Contar usuarios por tipo: OK
+# Contar usuarios por tipo
 def contar_usuarios_por_tipo():
     sql = "SELECT tipo_usuario, COUNT(*) AS total FROM usuario GROUP BY tipo_usuario"
     conn = conectar()
@@ -201,7 +201,7 @@ def contar_usuarios_por_tipo():
         conn.close()
 
 
-# Obter lista de lavanderia por usuario: OK
+# Obter lista de lavanderia por usuario
 def obter_lavanderias_por_usuario(usuario_id: int) -> List[int]:
     sql = " SELECT id_lavanderia FROM usuario_lavanderia WHERE id_usuario = %s"
     conn = conectar()
@@ -224,7 +224,7 @@ def obter_lavanderias_por_usuario(usuario_id: int) -> List[int]:
         conn.close()
 
 
-# Desassociar usuários (Admin e Moradores) de uma lavanderia: OK
+# Desassociar usuários (Admin e Moradores) de uma lavanderia
 # Remove todas as associações de usuários (Admin de Prédio e Moradores) da lavanderia na tabela N:N 'usuario_lavanderia'.
 # As contas dos usuários na tabela 'usuario' são preservadas.
 def desassociar_usuarios_da_lavanderia(id_lavanderia: int) -> int:
@@ -243,8 +243,6 @@ def desassociar_usuarios_da_lavanderia(id_lavanderia: int) -> int:
         return 0
     finally:
         conn.close()
-
-
 
 
 # Listar IDs de Usuários por Lavanderia

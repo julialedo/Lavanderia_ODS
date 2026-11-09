@@ -51,13 +51,11 @@ class ControladorReserva:
         print(f"DEBUG: Data saída no controlador: {data_agendamento}")
         resultado = criar_reserva(nova_reserva) #chama model
 
-        # Se a reserva começa agora (ou já está em andamento), atualiza status da máquina
         try:
             agora = datetime.now()
             inicio_dt = datetime.strptime(f"{data_agendamento} {hora_inicio}", "%Y-%m-%d %H:%M")
             fim_dt = datetime.strptime(f"{data_agendamento} {hora_fim}", "%Y-%m-%d %H:%M")
         except Exception:
-            # fallback: se as strings trouxerem segundos, tentar sem corte
             try:
                 inicio_dt = datetime.strptime(f"{data_agendamento} {hora_inicio}", "%Y-%m-%d %H:%M:%S")
                 fim_dt = datetime.strptime(f"{data_agendamento} {hora_fim}", "%Y-%m-%d %H:%M:%S")

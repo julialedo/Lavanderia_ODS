@@ -13,7 +13,7 @@ import re
 
 class ControladorUsuario:
     
-    # Auntenticar Login: OK
+    # Auntenticar Login
     def login(self, email: str, senha: str) -> dict:
         if not email or not senha:  
             raise ValueError("Email e senha são obrigatórios!")   
@@ -26,23 +26,19 @@ class ControladorUsuario:
         return usuario
 
 
-    # Editar Perfi: OK
+    # Editar Perfi
     def editar_perfil(self, id_usuario: int, nome: str, email: str, telefone: str, senha_atual: str, nova_senha: Optional[str] = None) -> bool:
-        # 1. Validação dos campos obrigatórios
         if not all([id_usuario, nome, email, telefone, senha_atual]):
             raise ValueError("Todos os campos obrigatórios (Nome, Email, Telefone, Senha Atual) devem ser preenchidos!")
 
-        # 2. Re-autenticação/Validação da Senha Atual
         usuario_db = autenticar_usuario(email, senha_atual)
         
         if not usuario_db or usuario_db["id_usuario"] != id_usuario: 
             raise ValueError("Senha atual incorreta ou usuário não encontrado.")
              
-        # 3. Validação de Nova Senha (se fornecida)
         if nova_senha and len(nova_senha) < 6:
              raise ValueError("A nova senha deve ter pelo menos 6 caracteres.")
              
-        # 4. Chama o Model para atualizar
         ok = editar_usuario(id_usuario, nome, email, telefone, nova_senha)
         
         if not ok:
@@ -51,19 +47,19 @@ class ControladorUsuario:
         return True
 
 
-    # Validação de Email: OK
+    # Validação de Email
     def validar_email(self, email: str) -> bool:
         pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         return re.match(pattern, email) is not None
 
 
-    # Validação de Telefone: OK
+    # Validação de Telefone
     def validar_telefone(self, telefone: str) -> bool:
         padrao = r'^(\+55\s?)?(\(?\d{2}\)?\s?)?\d{4,5}-?\d{4}$'
         return re.match(padrao, telefone) is not None
      
 
-    # Cadastrar Morador que se inscreveu: OK
+    # Cadastrar Morador que se inscreveu
     def cadastrar_morador(self, nome: str, email: str, senha: str, telefone: str, id_lavanderia: int) -> Tuple[bool, str]:
         try:
             # Validações de campos obrigatórios:
@@ -123,7 +119,7 @@ class ControladorUsuario:
             return False, str(e)
 
 
-    # Listar moradores pendentes (para serem aceitos na lavanderia pelo adm): OK
+    # Listar moradores pendentes (para serem aceitos na lavanderia pelo adm)
     def listar_moradores_pendentes(self, id_lavanderia: int) -> list:
         try:
             return listar_moradores_pendentes_lavanderia(id_lavanderia)
@@ -131,7 +127,7 @@ class ControladorUsuario:
             raise ValueError(f"Erro ao listar moradores pendentes: {str(e)}")
 
 
-    # Aprovar moradores: OK
+    # Aprovar moradores
     def aprovar_morador(self, id_usuario: int) -> bool:
         try:
             sucesso = aprovar_conta_morador(id_usuario)
@@ -142,7 +138,7 @@ class ControladorUsuario:
             raise ValueError(f"Erro ao aprovar morador: {str(e)}")
 
 
-    # Rejeitar moradores: OK
+    # Rejeitar moradores
     def rejeitar_morador(self, id_usuario: int) -> bool:
         try:
             sucesso = rejeitar_conta_morador(id_usuario)
@@ -153,7 +149,7 @@ class ControladorUsuario:
             raise ValueError(f"Erro ao rejeitar morador: {str(e)}")
 
 
-    # Contar total de usuarios no sistema: OK
+    # Contar total de usuarios no sistema
     def contar_usuarios(self) -> int:
         try:
             return contar_usuarios()
@@ -161,7 +157,7 @@ class ControladorUsuario:
             raise ValueError(f"Erro ao contar usuários: {str(e)}")
 
     
-    # Buscar usuario por ID: OK
+    # Buscar usuario por ID
     def obter_usuario_por_id(self, usuario_id: int) -> Optional[dict]:
         try:
             return obter_usuario_por_id(usuario_id)
@@ -169,27 +165,25 @@ class ControladorUsuario:
             raise ValueError(f"Erro ao buscar usuário: {str(e)}")
 
 
-    # ATENÇÃOBuscar usuario por email:
     def buscar_usuario_por_email(self, email: str) -> Optional[dict]:
         try:
-            # ATENÇÃO!!!! Esta função precisaria ser implementada no modelo
             # Por enquanto retornamos None
             return None
         except Exception as e:
             raise ValueError(f"Erro ao buscar usuário: {str(e)}")
 
 
-    # Listar lavanderias cadastradas: OK
+    # Listar lavanderias cadastradas
     def listar_lavanderias(self):
         return listar_lavanderias()
     
 
-    # Obter lavanderias por usuario: OK
+    # Obter lavanderias por usuario
     def obter_lavanderias_usuario(self, id_usuario: int) -> list:
 
         if not id_usuario or not isinstance(id_usuario, int):
             # Validação básica de entrada
-            print("⚠️ ID de usuário não fornecido.")
+            print("ID de usuário não fornecido.")
             return []
             
         try:
@@ -198,5 +192,5 @@ class ControladorUsuario:
                 print(f"Usuário ID {id_usuario} não está associado a nenhuma lavanderia.")
             return lista_ids
         except Exception as e:
-            print(f"❌ Erro no controlador ao buscar lavanderias. Detalhes: {e}")
+            print(f"Erro no controlador ao buscar lavanderias. Detalhes: {e}")
             return []

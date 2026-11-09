@@ -26,11 +26,9 @@ class ControladorOcorrencia:
             nova_ocorrencia = criar_ocorrencia(id_maquina=id_maquina, descricao=descricao, nome_usuario=nome_usuario, id_lavanderia=id_lavanderia)
             
             if nova_ocorrencia:
-                # 1. Busca o ID do Administrador (ADM do Prédio)
                 id_adm_destino = obter_id_adm_por_lavanderia(id_lavanderia) 
                 
                 if id_adm_destino is not None:
-                    # 2. Cria a notificação para o ADM
                     if notificar_nova_ocorrencia(id_adm_destino):
                         print(f"Notificação de nova ocorrência criada para o ADM ID: {id_adm_destino}")
                     else:
@@ -53,7 +51,7 @@ class ControladorOcorrencia:
             return []
 
 
-    # Lista as ocorrências para o administrador: OK
+    # Lista as ocorrências para o administrador
     def listar_ocorrencias_para_admin(self, id_lavanderia_admin: int):
         if not id_lavanderia_admin:
             print("Erro: Admin não tem ID de lavanderia associado.")

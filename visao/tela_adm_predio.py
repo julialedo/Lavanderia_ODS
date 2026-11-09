@@ -51,7 +51,7 @@ if "id_lavanderia_ativa" not in st.session_state and st.session_state.get("lista
     #para armazenar a lavanderia que ele esta, abre a tela com a primeira
 
 
-# Pega os dados de todas as lavanderias associadas aquele adm, e utiliza cache: OK
+# Pega os dados de todas as lavanderias associadas aquele adm, e utiliza cache
 def get_all_lavanderias_info(lista_ids_lavanderia):
     if not lista_ids_lavanderia:
         return {}
@@ -72,7 +72,7 @@ def get_all_lavanderias_info(lista_ids_lavanderia):
     return st.session_state[cache_key]
 
 
-# Função para carregar dados do usuário: OK
+# Função para carregar dados do usuário
 def carregar_dados_usuario():
     if "usuario_dados" not in st.session_state and "id_usuario" in st.session_state:
         try:
@@ -85,10 +85,10 @@ def carregar_dados_usuario():
                     "telefone": usuario_dados.telefone
                 }
         except Exception as e:
-            st.error(f"❌ Erro ao carregar dados do usuário: {str(e)}")
+            st.error(f"Erro ao carregar dados do usuário: {str(e)}")
 
 
-# Carregar as maquinas com cache e limpar cache: OK
+# Carregar as maquinas com cache e limpar cache
 def get_maquinas_lavanderia(id_lavanderia):
     if not id_lavanderia:
         return []
@@ -110,7 +110,7 @@ def clear_maquinas_cache(id_lavanderia):
             del st.session_state[cache_key]
 
 
-# Listar moradores pendentes de aprovação com cache e limpar cache: OK
+# Listar moradores pendentes de aprovação com cache e limpar cache
 def get_moradores_pendentes_cache(id_lavanderia):
     if not id_lavanderia:
         return []
@@ -121,7 +121,7 @@ def get_moradores_pendentes_cache(id_lavanderia):
             moradores = controlador_usuario.listar_moradores_pendentes(id_lavanderia) if controlador_usuario else []
             st.session_state[cache_key] = moradores
         except Exception as e:
-            st.error(f"❌ Erro ao buscar moradores pendentes. Detalhes:{e}")
+            st.error(f"Erro ao buscar moradores pendentes. Detalhes:{e}")
             st.session_state[cache_key] = []
     return st.session_state[cache_key]
 
@@ -132,7 +132,7 @@ def clear_moradores_cache(id_lavanderia):
             del st.session_state[cache_key]
 
 
-# Listar ocorrências com cache e limpar cache: OK
+# Listar ocorrências com cache e limpar cache
 def get_ocorrencias_cache(id_lavanderia):
     if not id_lavanderia:
         return []
@@ -153,15 +153,14 @@ def clear_ocorrencias_cache(id_lavanderia):
             del st.session_state[cache_key]
 
 
-# ------------------------------
-# Tela de Aprovação de Moradores: OK
+# Tela de Aprovação de Moradores
 def aprovar_moradores():
-    st.subheader("👥 Aprovar Moradores Cadastrados")
+    st.subheader("Aprovar Moradores Cadastrados")
     st.text("Aqui você pode aprovar ou rejeitar cadastros de novos moradores.")
 
     id_lavanderia_admin = st.session_state.get("id_lavanderia_ativa")
     if not id_lavanderia_admin:
-        st.error("❌ ID da lavanderia ativa não encontrado.")
+        st.error("ID da lavanderia ativa não encontrado.")
         return
 
     # Buscar moradores pendentes com cache:
@@ -170,7 +169,7 @@ def aprovar_moradores():
         if not moradores_pendentes:
             st.success("Não há moradores aguardando aprovação!")
 
-            if st.button("🔄 Atualizar Lista", use_container_width=True, key="atualizar_lista_moradores"):
+            if st.button("Atualizar Lista", use_container_width=True, key="atualizar_lista_moradores"):
                 clear_moradores_cache(id_lavanderia_admin)
                 st.rerun()
         else:
@@ -183,44 +182,43 @@ def aprovar_moradores():
                     col1, col2 = st.columns([3, 1])
 
                     with col1:
-                        st.subheader(f"👤 {morador['nome']}")
-                        st.write(f"📧 **Email:** {morador['email']}")
-                        st.write(f"📞 **Telefone:** {morador['telefone']}")
-                        st.write(f"📅 **Data do Cadastro:** {morador['data_cadastro_usuario']}")
+                        st.subheader(f"{morador['nome']}")
+                        st.write(f"**Email:** {morador['email']}")
+                        st.write(f"**Telefone:** {morador['telefone']}")
+                        st.write(f"**Data do Cadastro:** {morador['data_cadastro_usuario']}")
 
                     with col2:
                         st.subheader("Ações:")
-                        if st.button("✅ Aprovar", key=f"aprovar_{morador['id_usuario']}", use_container_width=True):
+                        if st.button("Aprovar", key=f"aprovar_{morador['id_usuario']}", use_container_width=True):
                             try:
                                 if controlador_usuario.aprovar_morador(morador['id_usuario']):
                                     clear_moradores_cache(id_lavanderia_admin)
                                     st.rerun()
                             except Exception as e:
-                                st.error(f"❌ Erro: {str(e)}")
+                                st.error(f"Erro: {str(e)}")
 
-                        if st.button("❌ Rejeitar", key=f"rejeitar_{morador['id_usuario']}", use_container_width=True):
+                        if st.button("Rejeitar", key=f"rejeitar_{morador['id_usuario']}", use_container_width=True):
                             try:
                                 if controlador_usuario.rejeitar_morador(morador['id_usuario']):
                                     clear_moradores_cache(id_lavanderia_admin)
                                     st.rerun()
                             except Exception as e:
-                                st.error(f"❌ Erro: {str(e)}")
+                                st.error(f"Erro: {str(e)}")
 
                     if i < len(moradores_pendentes) - 1:
                         st.markdown("---")
     except Exception as e:
-        st.error(f"❌ Erro ao carregar moradores pendentes: {str(e)}")
+        st.error(f"Erro ao carregar moradores pendentes: {str(e)}")
 
     st.markdown("---")
-    if st.button("⬅️ Voltar ao Menu Principal", use_container_width=True):
+    if st.button("Voltar ao Menu Principal", use_container_width=True):
         st.session_state.subpagina_adm_predio = None
         st.rerun()
 
 
-# ---------------------------------
-# Tela de Gerenciamento de Máquinas: OK
+# Tela de Gerenciamento de Máquinas
 def gerenciar_maquinas():
-    st.subheader("⚙️ Gerenciamento de Máquinas")
+    st.subheader("Gerenciamento de Máquinas")
     st.text("Aqui você pode adicionar, editar ou remover maquinas em sua lavanderia.")
 
     # Verifica se está editando uma máquina específica
@@ -230,7 +228,7 @@ def gerenciar_maquinas():
 
     id_lavanderia = st.session_state.get("id_lavanderia_ativa")
     if not id_lavanderia:
-        st.error("❌ ID da lavanderia não encontrado.")
+        st.error("ID da lavanderia não encontrado.")
         return
 
     try:
@@ -252,7 +250,7 @@ def gerenciar_maquinas():
                 st.metric("**Em Manutenção**", maquinas_manutencao)
 
             # Cadastrar Máquinas - Formulário
-            with st.expander("➕ Cadastrar Nova Máquina", expanded=False):
+            with st.expander("Cadastrar Nova Máquina", expanded=False):
                 with st.form("nova_maquina", clear_on_submit=True):
                     codigo = st.text_input("Código da Máquina (ex: LAV-01, SEC-07)")
                     tipo = st.selectbox("Tipo da Máquina", ["lavadora", "secadora"])
@@ -261,25 +259,25 @@ def gerenciar_maquinas():
                     
                     if st.form_submit_button("Cadastrar Máquina"):
                         if not codigo:
-                            st.error("❌ O código da máquina é obrigatório!")
+                            st.error("O código da máquina é obrigatório!")
                         elif not capacidade:
-                            st.error("❌ A capacidade da máquina é obrigatória!")
+                            st.error("A capacidade da máquina é obrigatória!")
                         else:
                             try:
                                 new_id = controlador_maquina.cadastrar_maquina(
                                     id_lavanderia, codigo, tipo, capacidade, status
                                 )
-                                st.success(f"✅ Máquina cadastrada com sucesso! ID: {new_id}")
+                                st.success(f"Máquina cadastrada com sucesso! ID: {new_id}")
                                 clear_maquinas_cache(id_lavanderia)
                                 st.rerun()
                             except Exception as e:
-                                st.error(f"❌ Erro ao cadastrar máquina: {str(e)}")
+                                st.error(f"Erro ao cadastrar máquina: {str(e)}")
 
             # Listar as Máquinas Cadastradas:
             st.markdown("---")
             st.subheader("Máquinas cadastradas:")
             for maq in maquinas:
-                status_color = "🟢" if maq.status_maquina == "livre" else "🟡" if maq.status_maquina == "em_uso" else "🔴"
+                status_color = "" if maq.status_maquina == "livre" else "" if maq.status_maquina == "em_uso" else ""
                 
                 with st.expander(f"{status_color} {maq.codigo_maquina} - {maq.tipo_maquina.capitalize()} ({maq.capacidade})"):
                     col1, col2 = st.columns([3, 1])
@@ -290,32 +288,31 @@ def gerenciar_maquinas():
                         st.write(f"**Capacidade:** {maq.capacidade}")
 
                     with col2:
-                        if st.button("✏️ Editar", key=f"edit_{maq.id_maquina}", use_container_width=True):
+                        if st.button("Editar", key=f"edit_{maq.id_maquina}", use_container_width=True):
                             st.session_state["editar_maquina"] = maq.id_maquina
                             st.rerun()
 
-                        if st.button("🗑️ Excluir", key=f"del_{maq.id_maquina}", use_container_width=True):
+                        if st.button("Excluir", key=f"del_{maq.id_maquina}", use_container_width=True):
                             try:
                                 ok = controlador_maquina.remover_maquina(maq.id_maquina)
                                 if ok:
-                                    st.success("✅ Máquina removida com sucesso!")
+                                    st.success("Máquina removida com sucesso!")
                                     clear_maquinas_cache(id_lavanderia)
                                     st.rerun()
                                 else:
-                                    st.error("❌ Erro ao remover máquina.")
+                                    st.error("Erro ao remover máquina.")
                             except Exception as e:
-                                st.error(f"❌ Erro: {str(e)}")
+                                st.error(f"Erro: {str(e)}")
     except Exception as e:
-        st.error(f"❌ Erro ao carregar máquinas: {str(e)}")
+        st.error(f"Erro ao carregar máquinas: {str(e)}")
 
     st.markdown("---")
-    if st.button("⬅️ Voltar ao Menu Principal", use_container_width=True):
+    if st.button("Voltar ao Menu Principal", use_container_width=True):
         st.session_state.subpagina_adm_predio = None
         st.rerun()
 
 
-# -------------------------
-# Tela de Edição de Máquina: OK
+# Tela de Edição de Máquina
 def editar_maquina_screen():
     st.subheader("Editar Máquina:")
 
@@ -324,8 +321,8 @@ def editar_maquina_screen():
         maquina = controlador_maquina.obter(maq_id) if controlador_maquina else None
 
         if not maquina:
-            st.error("❌ Máquina não encontrada!")
-            if st.button("⬅️ Voltar"):
+            st.error("Máquina não encontrada!")
+            if st.button("Voltar"):
                 del st.session_state["editar_maquina"]
                 st.rerun()
             return
@@ -361,17 +358,17 @@ def editar_maquina_screen():
 
             col_btn1, col_btn2 = st.columns([1, 1])
             with col_btn1:
-                salvar = st.form_submit_button("✅ Salvar Alterações", use_container_width=True)
+                salvar = st.form_submit_button("Salvar Alterações", use_container_width=True)
             with col_btn2:
-                cancelar = st.form_submit_button("❌ Cancelar", use_container_width=True)
+                cancelar = st.form_submit_button("Cancelar", use_container_width=True)
 
             if salvar:
                 if not codigo_novo:
-                    st.error("❌ O código da máquina é obrigatório!")
+                    st.error("O código da máquina é obrigatório!")
                     return
 
                 if not capacidade_nova:
-                    st.error("❌ A capacidade da máquina é obrigatória!")
+                    st.error("A capacidade da máquina é obrigatória!")
                     return
 
                 campos = {
@@ -384,42 +381,41 @@ def editar_maquina_screen():
                 try:
                     ok = controlador_maquina.editar_maquina(maq_id, campos)
                     if ok:
-                        st.success("✅ Máquina atualizada com sucesso!")
+                        st.success("Máquina atualizada com sucesso!")
                         clear_maquinas_cache(st.session_state.get("id_lavanderia_ativa"))
                         del st.session_state["editar_maquina"]
                         st.rerun()
                     else:
-                        st.warning("⚠️ Nenhuma alteração detectada ou máquina não encontrada.")
+                        st.warning("Nenhuma alteração detectada ou máquina não encontrada.")
                 except Exception as e:
-                    st.error(f"❌ Erro ao atualizar máquina: {str(e)}")
+                    st.error(f"Erro ao atualizar máquina: {str(e)}")
 
             if cancelar:
                 del st.session_state["editar_maquina"]
                 st.rerun()
 
     except Exception as e:
-        st.error(f"❌ Erro ao carregar dados da máquina: {str(e)}")
+        st.error(f"Erro ao carregar dados da máquina: {str(e)}")
    
 
-# ------------------------------------
-# Tela de Gerenciamento de Manutenções: OK
+# Tela de Gerenciamento de Manutenções
 def gerenciar_manutencoes():
-    st.subheader("🔧 Gerenciamento de Manutenções")
+    st.subheader("Gerenciamento de Manutenções")
     st.text("Aqui você pode realatar ou agendar manutenções preventivas e corretivas em suas máquinas.")
 
     id_lavanderia = st.session_state.get("id_lavanderia_ativa")
     if not id_lavanderia:
-        st.error("❌ ID da lavanderia não encontrado.")
+        st.error("ID da lavanderia não encontrado.")
         return
     if not controlador_manutencao:
-        st.error("❌ Sistema de manutenção indisponível.")
+        st.error("Sistema de manutenção indisponível.")
         return
 
     # Obter nome do admin logado
     nome_adm = st.session_state.get("usuario", "Administrador")
 
     # Abas para diferentes funcionalidades
-    tab1, tab2, tab3 = st.tabs(["📅 Agendar Manutenção Preventiva", "🔧 Registrar Manutenção Realizada", "📋 Histórico de Manutenções"])
+    tab1, tab2, tab3 = st.tabs(["Agendar Manutenção Preventiva", "Registrar Manutenção Realizada", "Histórico de Manutenções"])
     with tab1:
         st.subheader("Agendar Manutenção Preventiva:")
         maquinas = get_maquinas_lavanderia(id_lavanderia)
@@ -453,10 +449,10 @@ def gerenciar_manutencoes():
                             descricao=descricao,
                             nome_adm=nome_adm
                         )
-                        st.success(f"✅ Manutenção preventiva agendada com sucesso!")
+                        st.success(f"Manutenção preventiva agendada com sucesso!")
                         st.rerun()
                     except Exception as e:
-                        st.error(f"❌ Erro ao agendar manutenção: {str(e)}")
+                        st.error(f"Erro ao agendar manutenção: {str(e)}")
 
     with tab2:
         st.subheader("Registrar Manutenção Realizada")
@@ -491,10 +487,10 @@ def gerenciar_manutencoes():
                             descricao=descricao,
                             nome_adm=nome_adm
                         )
-                        st.success(f"✅ Manutenção registrada com sucesso!")
+                        st.success(f"Manutenção registrada com sucesso!")
                         st.rerun()
                     except Exception as e:
-                        st.error(f"❌ Erro ao registrar manutenção: {str(e)}")
+                        st.error(f"Erro ao registrar manutenção: {str(e)}")
 
     with tab3:
         # Mostrar manutenções pendentes primeiro
@@ -518,14 +514,14 @@ def gerenciar_manutencoes():
                     if not manutencoes_filtradas:
                         st.success("Nenhuma manutenção pendente!")
                     else:
-                        st.warning(f"⚠️ Você tem {len(manutencoes_filtradas)} manutenção(ões) pendente(s)")
+                        st.warning(f"Você tem {len(manutencoes_filtradas)} manutenção(ões) pendente(s)")
                 
                 for manutencao in manutencoes_filtradas:
                     if manutencao.data_realizada:
-                        icone = "✅"
+                        icone = ""
                         status = "Realizada"
                     else:
-                        icone = "📅"
+                        icone = ""
                         status = "Pendente "
 
                     with st.expander(f"{icone} Manutenção {manutencao.id_manutencao} - {status}"):
@@ -544,10 +540,10 @@ def gerenciar_manutencoes():
                         with col2:
                             if manutencao.data_realizada:
                                 st.write(f"**Data Realizada:** {manutencao.data_realizada}")
-                                st.success("✅ Concluída")
+                                st.success("Concluída")
                             else:
-                                st.warning("📅 Pendente")
-                                if st.button("✅ Marcar como Realizada", key=f"realizar_hist_{manutencao.id_manutencao}"):
+                                st.warning("Pendente")
+                                if st.button("Marcar como Realizada", key=f"realizar_hist_{manutencao.id_manutencao}"):
                                     st.session_state[f"editando_{manutencao.id_manutencao}"] = True
 
                         st.write(f"**Descrição:** {manutencao.descricao}")
@@ -590,23 +586,22 @@ def gerenciar_manutencoes():
                             except Exception as e:
                                 st.error("Erro ao marcar como realizada.")
         except Exception as e:
-            st.error(f"❌ Erro ao carregar histórico: {str(e)}")
+            st.error(f"Erro ao carregar histórico: {str(e)}")
 
     st.markdown("---")
-    if st.button("⬅️ Voltar ao Menu Principal", use_container_width=True):
+    if st.button("Voltar ao Menu Principal", use_container_width=True):
         st.session_state.subpagina_adm_predio = None
         st.rerun()
 
 
-# -------------------
 # Tela de Relatórios: CONFERIR
 def abrir_relatorios():
-    st.subheader("📊 Relatórios de Uso da Lavanderia:")
+    st.subheader("Relatórios de Uso da Lavanderia:")
     st.text("Aqui você pode visualizar relatórios e insight sobre o uso da sua lavanderia.")
 
     id_lavanderia = st.session_state.get("id_lavanderia_ativa")
     if not id_lavanderia:
-        st.error("❌ ID da lavanderia não encontrado. Faça login novamente.")
+        st.error("ID da lavanderia não encontrado. Faça login novamente.")
         return
 
     with st.container():
@@ -619,12 +614,12 @@ def abrir_relatorios():
             data_final = st.date_input("**Data final:**", help="Selecione a data final do período")
         with col3:
             st.write("")
-            gerar_btn = st.button("🚀**Gerar Relatório**", use_container_width=True)
+            gerar_btn = st.button("**Gerar Relatório**", use_container_width=True)
 
     if gerar_btn:
         try:
             if data_final < data_inicial:
-                st.error("❌ A data final não pode ser anterior à data inicial.")
+                st.error("A data final não pode ser anterior à data inicial.")
                 return
 
             maquinas = get_maquinas_lavanderia(id_lavanderia)
@@ -632,7 +627,7 @@ def abrir_relatorios():
                 st.info("Nenhuma máquina cadastrada nesta lavanderia.")
                 return
 
-            with st.spinner("🔍 Buscando dados..."):
+            with st.spinner("Buscando dados..."):
                 todas_reservas = controlador_reserva.listar_reservas_periodo(
                     id_lavanderia,
                     data_inicial.strftime("%Y-%m-%d"),
@@ -678,15 +673,15 @@ def abrir_relatorios():
 
                 # Gráficos
                 st.markdown("---")
-                st.subheader("📊 Análise Visual")
+                st.subheader("Análise Visual")
 
-                tab1, tab2 = st.tabs(["📋 Dados Detalhados", "📈 Gráficos"])
+                tab1, tab2 = st.tabs(["Dados Detalhados", "Gráficos"])
 
                 with tab1:
                     st.dataframe(df, use_container_width=True, hide_index=True)
                     csv = df.to_csv(index=False)
                     st.download_button(
-                        label="📥 Exportar para CSV",
+                        label="Exportar para CSV",
                         data=csv,
                         file_name=f"relatorio_lavanderia_{data_inicial}_{data_final}.csv",
                         mime="text/csv",
@@ -709,26 +704,25 @@ def abrir_relatorios():
                                 ax1.text(i, v + 0.1, str(v), ha='center', va='bottom')
                             st.pyplot(fig1)
         except Exception as e:
-            st.error(f"❌ Erro ao gerar relatório: {str(e)}")
+            st.error(f"Erro ao gerar relatório: {str(e)}")
 
     # Botão de voltar
     st.markdown("---")
-    if st.button("⬅️ Voltar para o Menu Principal", use_container_width=True):
+    if st.button("Voltar para o Menu Principal", use_container_width=True):
         st.session_state.subpagina_adm_predio = None
         st.rerun()
 
 
-# -------------------
 # Tela de Ocorrências: CONFERIR
 def visualizar_ocorrencias():
-    st.subheader("⚠️ Gerenciamento de Ocorrências")
+    st.subheader("Gerenciamento de Ocorrências")
     st.text("Aqui você pode visualizar as ocorrências relatadas por usuarios da sua lavanderia.")
     
     id_lavanderia_admin = st.session_state.get("id_lavanderia_ativa")
     if not id_lavanderia_admin:
-        st.error("❌ ID da lavanderia do admin não encontrado na sessão.")
+        st.error("ID da lavanderia do admin não encontrado na sessão.")
         st.markdown("---")
-        if st.button("⬅️ Voltar ao Menu Principal", use_container_width=True):
+        if st.button("Voltar ao Menu Principal", use_container_width=True):
             st.session_state.subpagina_adm_predio = None
             st.rerun()
         return
@@ -751,29 +745,28 @@ def visualizar_ocorrencias():
                         st.warning(f"_{oc.descricao}_")
 
     except Exception as e:
-        st.error(f"❌ Erro ao carregar ocorrências: {e}")
+        st.error(f"Erro ao carregar ocorrências: {e}")
 
-    if st.button("🔄 Atualizar Ocorrências", use_container_width=True):
+    if st.button("Atualizar Ocorrências", use_container_width=True):
         clear_ocorrencias_cache(id_lavanderia_admin)
         st.rerun()
     
     st.markdown("---")
-    if st.button("⬅️ Voltar ao Menu Principal", use_container_width=True):
+    if st.button("Voltar ao Menu Principal", use_container_width=True):
         st.session_state.subpagina_adm_predio = None
         st.rerun()
 
 
-# ------------------------
 # Tela de Edição de Perfil:
 def editar_perfil():
-    st.subheader("✏️ Editar Informações do Perfil:")
+    st.subheader("Editar Informações do Perfil:")
 
     carregar_dados_usuario()
     usuario_logado = st.session_state.get("usuario_dados")
 
     if not usuario_logado:
         st.warning("Não foi possível carregar suas informações. Faça login novamente.")
-        if st.button("🔄 Tentar Novamente"):
+        if st.button("Tentar Novamente"):
             carregar_dados_usuario()
             st.rerun()
         return
@@ -802,15 +795,15 @@ def editar_perfil():
 
         if salvar:
             if not nome or not email:
-                st.error("❌ Nome e email são obrigatórios.")
+                st.error("Nome e email são obrigatórios.")
                 return
 
             if not senha_atual:
-                st.error("❌ A senha atual é obrigatória para confirmar as alterações.")
+                st.error("A senha atual é obrigatória para confirmar as alterações.")
                 return
 
             if nova_senha and nova_senha != confirmar_senha:
-                st.error("❌ As senhas não coincidem.")
+                st.error("As senhas não coincidem.")
                 return
 
             try:
@@ -824,7 +817,7 @@ def editar_perfil():
                 )
 
                 if sucesso:
-                    st.success("✅ Perfil atualizado com sucesso!")
+                    st.success("Perfil atualizado com sucesso!")
                     st.session_state["usuario_dados"]["nome"] = nome
                     st.session_state["usuario_dados"]["email"] = email
                     st.session_state["usuario_dados"]["telefone"] = telefone
@@ -832,29 +825,28 @@ def editar_perfil():
                     st.session_state.subpagina_adm_predio = None
                     st.rerun()
                 else:
-                    st.error("❌ Falha ao atualizar perfil. Verifique os dados e tente novamente.")
+                    st.error("Falha ao atualizar perfil. Verifique os dados e tente novamente.")
 
             except Exception as e:
-                st.error(f"❌ Erro: {str(e)}")
+                st.error(f"Erro: {str(e)}")
 
         if cancelar:
             st.session_state.subpagina_adm_predio = None
             st.rerun()
 
     st.markdown("---")
-    if st.button("⬅️ Voltar ao Menu Principal", use_container_width=True):
+    if st.button("Voltar ao Menu Principal", use_container_width=True):
         st.session_state.subpagina_adm_predio = None
         st.rerun()
 
 
-# ---------------------------------------
-# Tela inicial do Administrador do Prédio: OK
+# Tela inicial do Administrador do Prédio
 def tela_adm_predio():
 
     # Verificação inicial dos controladores:
     if not all([controlador_maquina, controlador_reserva, controlador_usuario, controlador_ocorrencia, controlador_manutencao, controlador_plataforma]):
-        st.error("⚠️ Sistema temporariamente indisponível. Tente novamente.")
-        if st.button("🔄 Recarregar"):
+        st.error("Sistema temporariamente indisponível. Tente novamente.")
+        if st.button("Recarregar"):
             st.rerun()
         return
 
@@ -870,7 +862,7 @@ def tela_adm_predio():
     # SIDEBAR:
     with st.sidebar:
         if "usuario" in st.session_state:
-            st.subheader(f" 👤 Bem-vindo(a) {st.session_state['usuario']}!")
+            st.subheader(f"Bem-vindo(a) {st.session_state['usuario']}!")
 
         st.markdown("---")
         if len(nomes_lavanderias) > 0 and id_lavanderia_ativa:
@@ -881,7 +873,7 @@ def tela_adm_predio():
             try:
                 index_selecionado = nomes_lavanderias.index(nome_lavanderia_ativa)
             except ValueError:
-                index_selecionado = 0 # Fallback
+                index_selecionado = 0
 
             lavanderia_selecionada = st.selectbox( 
                 "  Selecione uma Lavanderia:",
@@ -901,7 +893,7 @@ def tela_adm_predio():
             id_lavanderia_ativa = novo_id_ativo # Atualiza o contexto local
             
         if not id_lavanderia_ativa:
-            st.error("❌ Administrador não associado a nenhuma lavanderia.")
+            st.error("Administrador não associado a nenhuma lavanderia.")
         
         st.markdown("---")
         if st.button("Limpar Cache", use_container_width=True, help="Recarregar todos os dados em cache"):
@@ -911,7 +903,7 @@ def tela_adm_predio():
             st.success("Cache limpo!")
             st.rerun()
 
-        if st.button("🚪 Sair", use_container_width=True):
+        if st.button("Sair", use_container_width=True):
             st.session_state.clear()
             st.rerun()
 
@@ -946,19 +938,19 @@ def tela_adm_predio():
     with col_notificacao:
         st.write("") # Espaçamento para alinhar com o título
         # Botão que muda o st.session_state["pagina"] para rotear para a tela de notificações
-        if st.button("🔔", key="btn_notificacao_adm_predio", use_container_width=True):
+        if st.button("", key="btn_notificacao_adm_predio", use_container_width=True):
             st.session_state["pagina"] = "notificacao_adm_predio" # Usaremos esta chave no app.py
             st.rerun()
     
     
     # Abas Principais:
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "👥 Aprovar Moradores", "⚙️ Gerenciar Máquinas", "🔧 Manutenções",
-        "📊 Relatórios", "⚠️ Ocorrências", "👤 Meu Perfil"
+        "Aprovar Moradores", "Gerenciar Máquinas", "Manutenções",
+        "Relatórios", "Ocorrências", "Meu Perfil"
     ])
 
     with tab1:
-        st.subheader("👥 Aprovar Moradores")
+        st.subheader("Aprovar Moradores")
         st.write("Aprove ou rejeite cadastros de novos moradores na sua lavanderia.")
         # Estatística rápida com cache:
         try:
@@ -973,7 +965,7 @@ def tela_adm_predio():
             st.rerun()
 
     with tab2:
-        st.subheader("⚙️ Gerenciar Máquinas")
+        st.subheader("Gerenciar Máquinas")
         st.write("Cadastre, edite ou remova máquinas da sua lavanderia.")
         # Estatísticas rápidas:
         try:
@@ -990,7 +982,7 @@ def tela_adm_predio():
             st.rerun()
 
     with tab3:
-        st.subheader("🔧 Gerenciar Manutenções")
+        st.subheader("Gerenciar Manutenções")
         st.write("Agende manutenções preventivas e registre manutenções realizadas.")
         # Estatística rápida de pendências:
         try:
@@ -1005,14 +997,14 @@ def tela_adm_predio():
             st.rerun()
 
     with tab4:
-        st.subheader("📊 Relatórios")
+        st.subheader("Relatórios")
         st.write("Acompanhe o uso e desempenho da sua lavanderia.")
         if st.button("Abrir Relatórios", use_container_width=True, key="btn_relatorios"):
             st.session_state["subpagina_adm_predio"] = "abrir_relatorios"
             st.rerun()
 
     with tab5:
-        st.subheader("⚠️ Ocorrências")
+        st.subheader("Ocorrências")
         st.write("Revise e gerencie os problemas reportados pelos moradores.")
         # Estatística rápida:
         try:
@@ -1027,7 +1019,7 @@ def tela_adm_predio():
             st.rerun()
 
     with tab6:
-        st.subheader("👤 Meu Perfil")
+        st.subheader("Meu Perfil")
         st.write("Gerencie suas informações pessoais e senha.")
         # Mostra informações atuais do usuário:
         usuario_dados = st.session_state.get("usuario_dados")

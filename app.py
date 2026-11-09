@@ -15,7 +15,7 @@ def get_controlador_usuario():
         from controladores.controlador_usuario import ControladorUsuario
         return ControladorUsuario()
     except ImportError as e:
-        st.error(f"❌ Erro Crítico: Falha ao carregar ControladorUsuario. Detalhes: {e}")
+        st.error(f"Erro Crítico: Falha ao carregar ControladorUsuario. Detalhes: {e}")
         return None
     
 controlador_usuario = get_controlador_usuario()
@@ -39,7 +39,7 @@ def header():
     st.markdown(
         """
         <div style='text-align: center;'>
-            <h1>🧺 Lavanderias Coletivas</h1>
+            <h1> Lavanderias Coletivas</h1>
             <p><em>Sistema de reservas e controle de uso de lavanderias.</em></p>
         </div>
         <hr>

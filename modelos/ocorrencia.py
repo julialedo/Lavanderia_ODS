@@ -34,7 +34,7 @@ def listar_ocorrencias_db() -> list[ProblemaReportado]:
         return [] # Retorna lista vazia em caso de erro    
 
 
-# Lista ocorrências daquela lavanderia: OK
+# Lista ocorrências daquela lavanderia
 def listar_ocorrencias_por_lavanderia_db(id_lavanderia: int) -> list[ProblemaReportado]:
     ocorrencias = []
     try:

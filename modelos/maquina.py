@@ -18,7 +18,7 @@ class Maquina:
     capacidade: str
 
 
-# Cadastrar Máquina no Banco: OK
+# Cadastrar Máquina no Banco
 def criar_maquina(maquina: Maquina) -> int:
     #gera o comando sql de Insert (a query), não coloquei id.maquina porque esta com autoincrement no banco:    
     sql = "INSERT INTO maquina (id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade) VALUES (%s, %s, %s, %s, %s)"
@@ -34,7 +34,7 @@ def criar_maquina(maquina: Maquina) -> int:
         conn.close()  #fecha a conexão
 
 
-# Atualizar Máquina no Banco: OK
+# Atualizar Máquina no Banco
 def atualizar_maquina(id_maquina: int, campos: dict) -> bool:   #campos = dicionario com colunas e dados a atualizar
     set_clause = ", ".join(f"{k} = %s" for k in campos.keys())  #organiza os campos em uma "string" set_clause
     params = list(campos.values()) + [id_maquina]  #orgazina os parametros
@@ -51,7 +51,7 @@ def atualizar_maquina(id_maquina: int, campos: dict) -> bool:   #campos = dicion
         conn.close() #fecha a conexão
 
 
-# Deletar Máquina no Banco: OK
+# Deletar Máquina no Banco
 def deletar_maquina(id_maquina: int) -> bool:
     sql = "DELETE FROM maquina WHERE id_maquina = %s" #comando sql delete
     conn = conectar() #abre a conexão
@@ -66,7 +66,7 @@ def deletar_maquina(id_maquina: int) -> bool:
         conn.close() #fecha a conexão
 
 
-# Listar Máquinas por lavanderia: OK
+# Listar Máquinas por lavanderia
 def listar_maquinas_por_lavanderia(id_lavanderia: int) -> List[Maquina]:
     sql = "SELECT id_maquina, id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade FROM maquina WHERE id_lavanderia = %s" #comando sql select
     conn = conectar() #abre a conexão
@@ -82,7 +82,7 @@ def listar_maquinas_por_lavanderia(id_lavanderia: int) -> List[Maquina]:
         conn.close() #fecha a conexão
 
 
-# Contar quantidade de maquinas por lavanderia: OK
+# Contar quantidade de maquinas por lavanderia
 def contar_maquinas_por_lavanderia(id_lavanderia: int) -> int:
     sql = "SELECT COUNT(*) FROM maquina WHERE id_lavanderia = %s"
     conn = conectar()
@@ -95,7 +95,7 @@ def contar_maquinas_por_lavanderia(id_lavanderia: int) -> int:
     finally:
         conn.close()
 
-# Contar total de maquinas de todas as lavanderias juntas: OK
+# Contar total de maquinas de todas as lavanderias juntas
 def contar_maquinas():
     sql = "SELECT COUNT(*) FROM maquina"
     conn = conectar()
@@ -109,7 +109,7 @@ def contar_maquinas():
         conn.close()
 
 
-#Acessar uma Máquina especifica pelo id dela: OK
+# Acessar uma Máquina especifica pelo id dela
 def obter_maquina_por_id(id_maquina: int) -> Optional[Maquina]:
     sql = "SELECT id_maquina, id_lavanderia, codigo_maquina, tipo_maquina, status_maquina, capacidade FROM maquina WHERE id_maquina = %s" #comando sql select
     conn = conectar()  #abre conexão
@@ -146,7 +146,7 @@ def obter_status_e_reserva_ativa(id_lavanderia: int) -> List[Dict]:
         cur.close()
         return data #retorna a lista de dicionários com dados combinados
     except Exception as e:
-        print(f"❌ Erro ao buscar status/reserva: {e}")
+        print(f"Erro ao buscar status/reserva: {e}")
         return []
     finally:
         conn.close()

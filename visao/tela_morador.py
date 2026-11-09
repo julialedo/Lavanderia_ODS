@@ -87,7 +87,7 @@ def exibir_status_usuario_topo(maquinas_status: list):
         tempo_restante = ciclo_ativo['tempo_restante']
         codigo_maquina = ciclo_ativo['codigo_maquina']
 
-        st.info(f"✨ **Máquina {codigo_maquina}** está **{etapa}** (Status: {status})")
+        st.info(f"**Máquina {codigo_maquina}** está **{etapa}** (Status: {status})")
         
         # Display Progress Bar (RF3)
         st.progress(progresso, text=f"**{int(progresso * 100)}% concluído**")
@@ -107,9 +107,6 @@ def exibir_status_usuario_topo(maquinas_status: list):
 
     st.subheader("Seu Ciclo de Lavagem:")
 
-    # ----------------------------
-    # 1. Procurar máquina com ciclo ativo do usuário
-    # ----------------------------
     ciclo_ativo = None
     for maquina in maquinas_status:
         
@@ -121,9 +118,6 @@ def exibir_status_usuario_topo(maquinas_status: list):
             ciclo_ativo = maquina
             break
 
-    # ----------------------------
-    # 2. Se encontrou ciclo → EXIBE
-    # ----------------------------
     if ciclo_ativo:
 
         codigo_maquina = ciclo_ativo.get("codigo_maquina")
@@ -131,7 +125,7 @@ def exibir_status_usuario_topo(maquinas_status: list):
         progresso = ciclo_ativo.get("progresso", 0)
         tempo_restante = ciclo_ativo.get("tempo_restante", "N/A")
 
-        st.info(f"✨ **Máquina {codigo_maquina}** está **{etapa}**")
+        st.info(f"**Máquina {codigo_maquina}** está **{etapa}**")
 
         st.progress(
             progresso / 100,
@@ -144,9 +138,6 @@ def exibir_status_usuario_topo(maquinas_status: list):
             st.session_state["subpagina_morador"] = "minhas_reservas"
             st.rerun()
 
-    # ----------------------------
-    # 3. Se não tem ciclo ativo
-    # ----------------------------
     else:
         st.info("Você **não** está utilizando nenhuma máquina no momento.")
         st.caption("Abaixo, selecione uma máquina livre para reservar.")
@@ -171,14 +162,13 @@ def exibir_grid_maquinas(maquinas_status: list): #Exibe todas as máquinas e os 
                 status = maquina['status']
                 
                 if status == "Livre" or "Livre" in status:
-                    st.success(f"✅ Status: **Livre**")
+                    st.success(f"Status: **Livre**")
 
                     # Opção de escolher/reservar (RF1)
                     usar_key = f"usar_{maquina['id_maquina']}_{i}"
                     reservar_key = f"reserva_{maquina['id_maquina']}_{i}"
 
                     if st.button("Usar Agora", key=usar_key, use_container_width=True):
-                        # Criar reserva para agora (1 hora)
                         from datetime import datetime, timedelta
                         agora = datetime.now()
                         data_agora = agora.strftime("%Y-%m-%d")
@@ -192,39 +182,38 @@ def exibir_grid_maquinas(maquinas_status: list): #Exibe todas as máquinas e os 
                             hora_inicio
                         )
                         if nova_reserva:
-                            st.success(f"🎉 Ciclo iniciado na Máquina {maquina['codigo_maquina']} ({hora_inicio}).")
+                            st.success(f"Ciclo iniciado na Máquina {maquina['codigo_maquina']} ({hora_inicio}).")
                             clear_maquinas_cache(st.session_state.get("id_lavanderia"))
                             st.rerun()
                         else:
-                            st.error("❌ Não foi possível iniciar o ciclo. Horário pode estar ocupado.")
+                            st.error("Não foi possível iniciar o ciclo. Horário pode estar ocupado.")
                 
 
                 elif status == "Em Uso":
                     # Marca a reserva do próprio morador com um destaque
                     if maquina['is_my_reservation']:
-                        st.warning("🌟 **Em Uso (Seu Ciclo)**")
+                        st.warning("**Em Uso (Seu Ciclo)**")
                         st.caption(f"Fim em: {maquina['tempo_restante']}")
                     else:
-                        st.warning("🔴 **Em Uso**")
+                        st.warning("**Em Uso**")
                         st.caption(f"Fim em breve...")
 
                 elif status == "Em Manutenção":
-                    st.error("🔧 **Em Manutenção**")
+                    st.error("**Em Manutenção**")
                     
                 else: # Outros status, como Agendada
-                    st.info(f"⏳ **{status}**")
+                    st.info(f"**{status}**")
                     
                 st.caption(f"Capacidade: {maquina['capacidade']}")
 
 
-#------------------------
 # Tela inicial do Morador:
 def tela_morador():
 
     # Verificação inicial de controladores:
     if not all([controlador_reserva, controlador_maquina, controlador_usuario, controlador_ocorrencia, controlador_plataforma]):
-        st.error("⚠️ Sistema temporariamente indisponível. Tente novamente.")
-        if st.button("🔄 Recarregar"):
+        st.error("Sistema temporariamente indisponível. Tente novamente.")
+        if st.button("Recarregar"):
             st.rerun()
         return
     
@@ -241,11 +230,11 @@ def tela_morador():
     # SIDEBAR:
     with st.sidebar:
         if "usuario" in st.session_state:
-            st.subheader(f" 👤 Bem-vindo(a) {st.session_state['usuario']}!")
+            st.subheader(f"Bem-vindo(a) {st.session_state['usuario']}!")
 
         st.markdown("---")
         if not id_lavanderia_logada:
-            st.error("❌ Morador não associado a nenhuma lavanderia.")
+            st.error("Morador não associado a nenhuma lavanderia.")
         else:
             lavanderia_info = controlador_plataforma.obter_lavanderia_por_id(id_lavanderia_logada)
             if lavanderia_info:
@@ -258,7 +247,7 @@ def tela_morador():
             st.success("Cache limpo!")
             st.rerun()
 
-        if st.button("🚪 Sair", use_container_width=True):
+        if st.button("Sair", use_container_width=True):
             st.session_state.clear()
             st.rerun()
 
@@ -266,26 +255,26 @@ def tela_morador():
     # TELA PRINCIPAL:
     col_titulo, col_notificacao = st.columns([8, 1])
     with col_titulo:
-        st.header(f"👤 Área do Morador") # O título agora fica dentro da coluna
+        st.header(f"Área do Morador")
     
     with col_notificacao:
         st.write("") # Espaçamento para alinhar com o título
-        if st.button("🔔", key="btn_notificacao", use_container_width=True):
+        if st.button("", key="btn_notificacao", use_container_width=True):
             st.session_state["pagina"] = "notificacao"
             st.rerun() # Recarrega para mudar de página
 
     st.markdown("---")    
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "🏠 Home",
-        "📅 Visualizar Horários", 
-        "⏰ Fazer Agendamento", 
-        "📋 Minhas Reservas",
-        "⚠️ Reportar Ocorrência",
-        "👤 Meu Perfil"
+        "Home",
+        "Visualizar Horários", 
+        "Fazer Agendamento", 
+        "Minhas Reservas",
+        "Reportar Ocorrência",
+        "Meu Perfil"
     ])
 
     with tab1:
-        st.title("🧺 Dashboard da Lavanderia")
+        st.title("Dashboard da Lavanderia")
         id_lavanderia = st.session_state.get("id_lavanderia")
         id_usuario_logado = st.session_state.get("usuario_dados", {}).get("id_usuario")
         try:
@@ -293,7 +282,7 @@ def tela_morador():
                 id_lavanderia, id_usuario_logado
             )
         except Exception as e:
-            st.error(f"❌ Erro ao carregar status: {str(e)}")
+            st.error(f"Erro ao carregar status: {str(e)}")
             maquinas_status = []
 
         exibir_status_usuario_topo(maquinas_status)
@@ -329,7 +318,7 @@ def tela_morador():
         with col2:
             data_selecionada = st.date_input("Selecione a data")
         
-        if st.button("🔍 Ver Horários Disponíveis") and maquina_id:
+        if st.button("Ver Horários Disponíveis") and maquina_id:
             horarios_disponiveis = controlador_reserva.visualizar_horarios_disponiveis(
                 maquina_id, 
                 data_selecionada.strftime("%Y-%m-%d")
@@ -342,11 +331,11 @@ def tela_morador():
                 for i, horario in enumerate(horarios_disponiveis):
                     with cols[i % 4]:
                         st.write(f"**{horario}**")
-                        st.success("✅ Disponível")
+                        st.success("Disponível")
             else:
-                st.info("📭 Não há horários disponíveis para esta data/máquina.")
+                st.info("Não há horários disponíveis para esta data/máquina.")
         elif not maquina_id:
-            st.warning("⚠️ Selecione uma máquina para ver os horários disponíveis.")
+            st.warning("Selecione uma máquina para ver os horários disponíveis.")
     
     with tab3:
         st.subheader("Fazer Agendamento")
@@ -374,7 +363,7 @@ def tela_morador():
                     )
                     maquina_id_para_agendar = maquina_selecionada_agendar.split(" ")[1]
                 else:
-                    st.info("ℹ️ Nenhuma máquina disponível para agendamento.")
+                    st.info("Nenhuma máquina disponível para agendamento.")
 
                 data_agendamento = st.date_input("Data do agendamento", key="agendamento_data")
             
@@ -383,7 +372,7 @@ def tela_morador():
                 hora_agendamento = st.selectbox("Horário de início", horarios)
                 
             
-            if st.form_submit_button("📅 Fazer Agendamento"):
+            if st.form_submit_button("Fazer Agendamento"):
                 if maquina_id_para_agendar: 
                     reserva = controlador_reserva.criar_reserva(
                         maquina_id_para_agendar,
@@ -393,18 +382,18 @@ def tela_morador():
                     )
                     
                     if reserva:
-                        st.success(f"🎉 Reserva realizada com sucesso! ID: {reserva.id_reserva}")
+                        st.success(f"Reserva realizada com sucesso! ID: {reserva.id_reserva}")
                         # Limpa cache para refletir nova reserva
                         clear_maquinas_cache(id_lavanderia_logada)
                         st.rerun()
                     else:
-                        st.error("❌ Erro ao fazer reserva. Horário indisponível ou dados inválidos.")
+                        st.error("Erro ao fazer reserva. Horário indisponível ou dados inválidos.")
                 else:
-                    st.error("❌ Nenhuma máquina selecionada para o agendamento.")
+                    st.error("Nenhuma máquina selecionada para o agendamento.")
     
 
     with tab4:
-        st.subheader("📋 Minhas Reservas")
+        st.subheader("Minhas Reservas")
         
         hoje = datetime.now().date()
         
@@ -430,7 +419,7 @@ def tela_morador():
   
 
         if reservas_validas:
-            st.success(f"📋 Você tem {len(reservas_validas)} reserva(s) ativa(s) (hoje ou no futuro)")
+            st.success(f"Você tem {len(reservas_validas)} reserva(s) ativa(s) (hoje ou no futuro)")
                     
             for reserva in reservas_validas:
                 with st.expander(f"Reserva {reserva.id_reserva} - {reserva.data_reserva} às {reserva.hora_inicio}"):
@@ -443,12 +432,12 @@ def tela_morador():
                         st.write(f"**Status:** {reserva.status_reserva}")
                             
                     with col2:
-                        if st.button("✏️ Editar", key=f"edit_{reserva.id_reserva}"):
+                        if st.button("Editar", key=f"edit_{reserva.id_reserva}"):
                             st.session_state[f"editando_reserva_{reserva.id_reserva}"] = True
                             st.rerun()
                             
                     with col3:
-                        if st.button("❌ Cancelar", key=f"cancel_{reserva.id_reserva}"):
+                        if st.button("Cancelar", key=f"cancel_{reserva.id_reserva}"):
                             if controlador_reserva.cancelar_reserva(reserva.id_reserva, usuario_id_logado):
                                 st.success("Reserva cancelada com sucesso!")
                                 clear_maquinas_cache(id_lavanderia_logada)
@@ -458,7 +447,7 @@ def tela_morador():
                             
                     if st.session_state.get(f"editando_reserva_{reserva.id_reserva}"):
                         st.markdown("---")
-                        st.subheader("✏️ Editar Reserva")
+                        st.subheader("Editar Reserva")
                             
                         with st.form(f"form_editar_{reserva.id_reserva}"):
                             col_edit1, col_edit2 = st.columns(2)
@@ -489,7 +478,7 @@ def tela_morador():
                                     )
                                     maquina_id_edit = maquina_edit_selecionada.split(" ")[1]
                                 else:
-                                    st.info("ℹ️ Nenhuma máquina disponível para edição.")
+                                    st.info("Nenhuma máquina disponível para edição.")
                                     maquina_id_edit = str(reserva.id_maquina)
                             
                             with col_edit2:
@@ -530,9 +519,9 @@ def tela_morador():
                             
                             col_btn1, col_btn2 = st.columns(2)
                             with col_btn1:
-                                if st.form_submit_button("💾 Salvar Alterações", use_container_width=True):
+                                if st.form_submit_button("Salvar Alterações", use_container_width=True):
                                     if not maquina_id_edit:
-                                        st.error("❌ Erro: Nenhuma máquina selecionada para salvar.")
+                                        st.error("Erro: Nenhuma máquina selecionada para salvar.")
                                     else:
                                         try:
                                             data_reserva_str = reserva.data_reserva.strftime("%Y-%m-%d") if hasattr(reserva.data_reserva, 'strftime') else str(reserva.data_reserva)
@@ -549,12 +538,12 @@ def tela_morador():
                                                         nova_hora
                                                     )
                                                     if nova_reserva:
-                                                        st.success("🎉 Reserva editada com sucesso!")
+                                                        st.success("Reserva editada com sucesso!")
                                                         clear_maquinas_cache(id_lavanderia_logada)
                                                         del st.session_state[f"editando_reserva_{reserva.id_reserva}"]
                                                         st.rerun()
                                                     else:
-                                                        st.error("❌ Não foi possível criar a nova reserva. Horário pode estar ocupado.")
+                                                        st.error("Não foi possível criar a nova reserva. Horário pode estar ocupado.")
                                                         controlador_reserva.criar_reserva(
                                                             reserva.id_maquina,
                                                             usuario_id_logado,
@@ -562,22 +551,22 @@ def tela_morador():
                                                             reserva.hora_inicio
                                                         )
                                                 else:
-                                                    st.error("❌ Erro ao cancelar reserva anterior.")
+                                                    st.error("Erro ao cancelar reserva anterior.")
                                             else:
-                                                st.info("ℹ️ Nenhuma alteração foi feita.")
+                                                st.info("Nenhuma alteração foi feita.")
                                         
                                         except Exception as e:
-                                            st.error(f"❌ Erro ao editar reserva: {str(e)}")
+                                            st.error(f"Erro ao editar reserva: {str(e)}")
                             
                             with col_btn2:
-                                if st.form_submit_button("❌ Cancelar Edição", use_container_width=True):
+                                if st.form_submit_button("Cancelar Edição", use_container_width=True):
                                     del st.session_state[f"editando_reserva_{reserva.id_reserva}"]
                                     st.rerun()
         else:
-            st.info("📭 Você não possui reservas ativas futuras ou para hoje.")
+            st.info("Você não possui reservas ativas futuras ou para hoje.")
 
     with tab5:
-        st.subheader("⚠️ Reportar uma Ocorrência")
+        st.subheader("Reportar uma Ocorrência")
         st.write("Encontrou algo que não está funcionando? Nos avise.")
 
         with st.form("form_reportar_ocorrencia", clear_on_submit=True):
@@ -602,7 +591,7 @@ def tela_morador():
                 height=150
             )
 
-            enviado = st.form_submit_button("✉️ Enviar Reporte")
+            enviado = st.form_submit_button("Enviar Reporte")
 
             if enviado:
                 id_maquina_reporte = None
@@ -625,16 +614,16 @@ def tela_morador():
                     )
                     
                     if nova_ocorrencia:
-                        st.success(f"✅ Ocorrência reportada com sucesso (ID: {nova_ocorrencia.id_problema}). Obrigado!")
+                        st.success(f"Ocorrência reportada com sucesso (ID: {nova_ocorrencia.id_problema}). Obrigado!")
                     else:
-                        st.error("❌ Erro ao reportar a ocorrência. Tente novamente.")
+                        st.error("Erro ao reportar a ocorrência. Tente novamente.")
 
     with tab6:
-        st.subheader("👤 Editar Informações do Perfil")
+        st.subheader("Editar Informações do Perfil")
 
         usuario_logado = st.session_state.get("usuario_dados")
         if not usuario_logado:
-            st.warning("⚠️ Não foi possível carregar suas informações. Faça login novamente.")
+            st.warning("Não foi possível carregar suas informações. Faça login novamente.")
         else:
             with st.form("form_editar_perfil_morador"):
                 nome = st.text_input("Nome", value=usuario_logado["nome"])
@@ -643,7 +632,7 @@ def tela_morador():
                 senha_atual = st.text_input("Senha Atual*", type="password")
                 nova_senha = st.text_input("Nova Senha (opcional)", type="password")
 
-                salvar = st.form_submit_button("💾 Salvar Alterações")
+                salvar = st.form_submit_button("Salvar Alterações")
 
                 if salvar:
                     try:
@@ -656,12 +645,12 @@ def tela_morador():
                             nova_senha=nova_senha if nova_senha else None
                         )
                         if sucesso:
-                            st.success("✅ Perfil atualizado com sucesso!")
+                            st.success("Perfil atualizado com sucesso!")
                             st.session_state["usuario_dados"]["nome"] = nome
                             st.session_state["usuario_dados"]["email"] = email
                             st.session_state["usuario_dados"]["telefone"] = telefone
                             st.rerun()
                     except Exception as e:
-                        st.error(f"❌ Erro: {str(e)}")
+                        st.error(f"Erro: {str(e)}")
     
         

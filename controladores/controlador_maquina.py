@@ -7,7 +7,7 @@ from modelos.maquina import Maquina, criar_maquina, atualizar_maquina, deletar_m
 from modelos.reserva import listar_reservas_futuras_por_lavanderia, atualizar_status_reserva
 class ControladorMaquina:
 
-    #Cadastrar Máquinas: OK
+    # Cadastrar Máquinas
     def cadastrar_maquina(self, id_lavanderia: int, codigo: str, tipo: str, capacidade: str, status: str = "livre"):
         if tipo not in ("lavadora", "secadora"):  #validação de tipo
             raise ValueError("Tipo inválido")
@@ -17,7 +17,7 @@ class ControladorMaquina:
         #REGISTRAR LOG/AUDITORIA DE CADASTRO DE MAQUINA
 
 
-    #Editar Máquinas: OK
+    # Editar Máquinas
     def editar_maquina(self, id_maquina: int, campos: dict):
         #VALIDAÇÃO DE SE FOR DEIXAR EM MANUTENÇÃO, AVISAR OS QUE TEM RESERVAS ATIVAS
         #REGISTRAR LOG/AUDITORIA
@@ -32,11 +32,10 @@ class ControladorMaquina:
         return ok
 
 
-    #Remover Máquina: OK
+    # Remover Máquina
     def remover_maquina(self, id_maquina: int):
         from modelos.notificacao import notificar_exclusao_de_maquina_para_usuarios 
         from modelos.usuario import listar_ids_usuarios_por_lavanderia 
-        # 1. Obter a máquina para pegar os dados e id_lavanderia
         maquina_a_deletar = obter_maquina_por_id(id_maquina)
         if not maquina_a_deletar:
             raise ValueError("Máquina não encontrada para remoção.")
@@ -45,18 +44,13 @@ class ControladorMaquina:
         codigo_maquina = maquina_a_deletar.codigo_maquina
         tipo_maquina = maquina_a_deletar.tipo_maquina
 
-        # **VALIDAÇÕES (já existente, mas agora com contexto de notificação)**
         # VALIDAR SE TEM RESERVAS FUTURAS, CANCELAR E AVISAR MORADORES
-        # ... (sua lógica de validação/aviso sobre reservas) ...
         
-        # 2. Deletar a máquina do banco
         deletado_ok = deletar_maquina(id_maquina) # Chama deletar maquina do modelo
         
         if deletado_ok:
-            # 3. Listar todos os usuários da lavanderia
             ids_usuarios = listar_ids_usuarios_por_lavanderia(id_lavanderia)
 
-            # 4. Criar notificações para todos os usuários
             # Chamamos a função de alto nível que acabamos de criar no modelo de notificação
             notificar_exclusao_de_maquina_para_usuarios(
                 id_lavanderia, 
@@ -68,12 +62,12 @@ class ControladorMaquina:
             
         return deletado_ok
 
-    # Listar Máquinas por lavanderia: OK
+    # Listar Máquinas por lavanderia
     def listar_por_lavanderia(self, id_lavanderia: int):
         return listar_maquinas_por_lavanderia(id_lavanderia)
 
 
-    # Obter Máquina por Id: OK
+    # Obter Máquina por Id
     def obter(self, id_maquina: int):
         return obter_maquina_por_id(id_maquina)
     
@@ -157,7 +151,6 @@ class ControladorMaquina:
                     # não conseguir parsear, pula
                     continue
 
-            #Verificar se a reserva está ATIVA AGORA (Ciclo em andamento)
             if data_hora_inicio <= agora < data_hora_fim:
                 
                 progresso, tempo_restante, etapa_ciclo = self.calcular_progresso(
@@ -192,7 +185,6 @@ class ControladorMaquina:
 
             # Caso: reserva já passou (reserva expirou) -> liberar máquina e fechar reserva
             elif agora >= data_hora_fim:
-                # Se a reserva passou, devemos garantir que ela esteja finalizada e a maquina liberada.
                 try:
                     # atualizar status reserva no banco para 'finalizada' (se ainda estiver ativa)
                     atualizar_status_reserva(reserva.id_reserva, "concluida")
@@ -212,5 +204,4 @@ class ControladorMaquina:
                     "is_my_reservation": False
                 })
 
-        # 5. Converter o dicionário de volta para uma lista (o formato que a View espera)
         return list(status_map.values())

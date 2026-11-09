@@ -10,13 +10,13 @@ def get_controlador_usuario():
         from controladores.controlador_usuario import ControladorUsuario
         return ControladorUsuario()
     except ImportError as e:
-        st.error(f"❌ Erro Crítico: Falha ao carregar ControladorUsuario na Tela de Login. Detalhes: {e}")
+        st.error(f"Erro Crítico: Falha ao carregar ControladorUsuario na Tela de Login. Detalhes: {e}")
         return None
 
 controlador_usuario = get_controlador_usuario()
 
 
-# Tela de login: OK
+# Tela de login
 def tela_login():
 
     if "mostrar_cadastro" not in st.session_state:
@@ -36,7 +36,7 @@ def tela_login():
     
 
     # Seção de Login:
-    st.title("🔐 Login - Sistema de Lavanderias")
+    st.title("Login - Sistema de Lavanderias")
     st.markdown("---")
 
     col1, col2 = st.columns([2, 1])

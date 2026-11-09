@@ -10,7 +10,7 @@ from datetime import datetime
 
 class ControladorManutencao:
 
-    # Agendar uma manutenção preventiva para uma máquina: OK
+    # Agendar uma manutenção preventiva para uma máquina
     def agendar_manutencao_preventiva(self, id_maquina: int, data_agendada: str, hora_agendada: str, descricao: str, nome_adm: str) -> int:
         # Validar o preenchimento:
         if not id_maquina or not data_agendada or not hora_agendada or not descricao or not nome_adm:
@@ -37,7 +37,7 @@ class ControladorManutencao:
         return new_id
 
 
-    # Registrar manutenção realizada: OK
+    # Registrar manutenção realizada
     def registrar_manutencao_realizada(self, id_maquina: int, data_realizada: str, hora_realizada: str, descricao: str, nome_adm: str) -> int:
         #valida o preenchimento:
         if not id_maquina or not descricao or not nome_adm:
@@ -58,7 +58,7 @@ class ControladorManutencao:
         return new_id
 
 
-    # Marcar manutenção como realizada: OK
+    # Marcar manutenção como realizada
     def atualizar_manutencao(self, id_manutencao: int, id_maquina: int, data_realizada: str, hora_realizada: str, descricao: str, nome_adm: str) -> int:
         #valida o preenchimento:
         if not id_maquina or not descricao or not nome_adm:
@@ -79,11 +79,11 @@ class ControladorManutencao:
         return new_id
     
 
-    # Listar todas as manutenções: OK
+    # Listar todas as manutenções
     def listar_manutencoes(self, id_lavanderia: int) -> list:
         return listar_manutencoes_por_lavanderia(id_lavanderia)
 
 
-    # Listar manutenções pendentes: OK
+    # Listar manutenções pendentes
     def listar_manutencoes_pendentes(self, id_lavanderia: int) -> list:
         return listar_manutencoes_pendentes(id_lavanderia)

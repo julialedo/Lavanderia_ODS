@@ -10,13 +10,13 @@ from modelos.reserva import contar_reservas_hoje, lavanderias_mais_ativas
 
 class ControladorPlataforma:
 
-    # Cadastrar Lavanderia: OK
+    # Cadastrar Lavanderia
     def cadastrar_lavanderia(self, nome: str, endereco: str):
         lav = Lavanderia(None, None, nome, endereco, None)
         return criar_lavanderia(lav)
 
 
-    # Cadastrar Administrador do Predio: OK
+    # Cadastrar Administrador do Predio
     def cadastrar_admin_predio(self, nome: str, email: str, senha: str, telefone: str, id_lavanderia: int):
         novo_adm = criar_administrador_predio(nome, email, senha, telefone, id_lavanderia)
         if not novo_adm:
@@ -25,22 +25,22 @@ class ControladorPlataforma:
         return novo_adm
 
 
-    # Listar lavanderias cadastradas: OK
+    # Listar lavanderias cadastradas
     def listar_lavanderias(self):
         return listar_lavanderias()
 
 
-    # Contar maquinas por lavanderia: OK
+    # Contar maquinas por lavanderia
     def contar_maquinas(self, id_lavanderia: int):
         return contar_maquinas_por_lavanderia(id_lavanderia)
 
 
-   # Obter lavanderia por ID: OK
+   # Obter lavanderia por ID
     def obter_lavanderia_por_id(self, lavanderia_id: int):
         return retornar_lavanderia_por_id(lavanderia_id)
     
 
-    # Gerar estatisticas e relatorios da plataforma: OK
+    # Gerar estatisticas e relatorios da plataforma
     def obter_estatisticas(self):
         return {
             "usuarios": contar_usuarios(),
@@ -52,7 +52,7 @@ class ControladorPlataforma:
         }
     
 
-    # Excluir Lavanderia e usuarios associados a ela: OK
+    # Excluir Lavanderia e usuarios associados a ela
     def excluir_lavanderia_e_dependentes(self, id_lavanderia: int) -> bool:
         lavanderia_excluida = excluir_lavanderia_por_id(id_lavanderia)
         if lavanderia_excluida:
@@ -60,6 +60,6 @@ class ControladorPlataforma:
         return lavanderia_excluida
     
 
-    # Remover adm de uma lavanderia: OK
+    # Remover adm de uma lavanderia
     def remover_administrador_lavanderia(self, id_lavanderia: int, id_adm_predio: int) -> bool:
         return remover_adm_lavanderia(id_lavanderia, id_adm_predio)

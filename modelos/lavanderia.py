@@ -16,7 +16,7 @@ class Lavanderia:
     data_cadastro_lav: Optional[str]
 
 
-# Cadastrar Lavanderia: OK
+# Cadastrar Lavanderia
 def criar_lavanderia(lav: Lavanderia) -> int:
     sql = "INSERT INTO lavanderia (id_adm_predio, nome, endereco, data_cadastro_lav) VALUES (%s, %s, %s, NOW())" #comando sql
     conn = conectar()  #abre a conexão
@@ -31,7 +31,7 @@ def criar_lavanderia(lav: Lavanderia) -> int:
         conn.close()  #fecha a conexão
 
 
-# Listar Lavanderias: OK
+# Listar Lavanderias
 def listar_lavanderias() -> List[Lavanderia]:
     sql = "SELECT id_lavanderia, id_adm_predio, nome, endereco, data_cadastro_lav FROM lavanderia" #comando sql
     conn = conectar() #abre a conexão
@@ -47,7 +47,7 @@ def listar_lavanderias() -> List[Lavanderia]:
         conn.close() #fecha
 
 
-# Obter lavanderia por ID: OK
+# Obter lavanderia por ID
 def retornar_lavanderia_por_id(lavanderia_id: int):
     sql = "SELECT * FROM lavanderia WHERE id_lavanderia = %s"
     conn = conectar()
@@ -61,7 +61,6 @@ def retornar_lavanderia_por_id(lavanderia_id: int):
         conn.close()
 
 
-# Atualizar lavanderia criada se adm, o seu novo adm definido: OK
 def atualizar_adm_lavanderia(id_lavanderia: int, id_adm: int):
     sql = "UPDATE lavanderia SET id_adm_predio = %s WHERE id_lavanderia = %s"
     conn = conectar()
@@ -75,7 +74,7 @@ def atualizar_adm_lavanderia(id_lavanderia: int, id_adm: int):
         conn.close()
 
 
-# Contar total de lavanderias: OK
+# Contar total de lavanderias
 def contar_lavanderias():
     sql = "SELECT COUNT(*) FROM lavanderia"
     conn = conectar()
@@ -89,7 +88,7 @@ def contar_lavanderias():
         conn.close()
 
 
-# Excluir Lavanderia: OK
+# Excluir Lavanderia
 def excluir_lavanderia_por_id(id_lavanderia: int) -> bool:
     sql = "DELETE FROM lavanderia WHERE id_lavanderia = %s"
     conn = conectar()
@@ -104,7 +103,7 @@ def excluir_lavanderia_por_id(id_lavanderia: int) -> bool:
         conn.close()
 
 
-# Remover o Administrador do Predio da Lavanderia: OK
+# Remover o Administrador do Predio da Lavanderia
 def remover_adm_lavanderia(id_lavanderia: int, id_adm_predio: int) -> bool:
     sql_uptade_lav = "UPDATE lavanderia SET id_adm_predio = NULL WHERE id_lavanderia = %s"
     sql_delete_associacao = "DELETE FROM usuario_lavanderia WHERE id_usuario = %s AND id_lavanderia = %s"

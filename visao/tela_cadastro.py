@@ -10,7 +10,7 @@ def get_controlador_usuario():
         from controladores.controlador_usuario import ControladorUsuario
         return ControladorUsuario()
     except ImportError as e:
-        st.error(f"❌ Erro Crítico: Falha ao carregar ControladorUsuario na Tela de Cadastro. Detalhes: {e}")
+        st.error(f"Erro Crítico: Falha ao carregar ControladorUsuario na Tela de Cadastro. Detalhes: {e}")
         return None
 
 controlador_usuario = get_controlador_usuario()
@@ -18,7 +18,7 @@ controlador_usuario = get_controlador_usuario()
 
 # Tela para morador se cadastrar:
 def tela_cadastro():
-    st.title("📝 Cadastro de Morador")
+    st.title("Cadastro de Morador")
     st.info("Preencha os dados abaixo para se cadastrar no sistema de Lavanderias Coletivas.")
     
     # Cache da lista de lavanderias:
